@@ -1,5 +1,6 @@
 *.pkl
 config.txt
+neat-checkpoint*
 
 __pycache__/
 *.py[cod]

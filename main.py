@@ -7,26 +7,44 @@ from utils.configWriter import ConfigWriter
 import neat
 import os
 import pickle
+import ray
+import time
 
 #=====================================================================================
 #VARS
-CHECKPOINT              = 10
-GENERATIONS             = 5
-POPSIZE                 = 48
+CHECKPOINT              = 500
+GENERATIONS             = 200
+POPSIZE                 = 100
 N_HIDDEN                = 2
 N_INPUTS                = 2
 N_OUTPUTS               = 2
 
 SIM_POP_SIZE            = 10000
 SIM_MEAN_SKILL          = 50
-SIM_N_DAYS              = 100
+SIM_N_DAYS              = 1000
 #=====================================================================================
+@ray.remote
+def distFunction(genome):
+    network         = neat.nn.FeedForwardNetwork.create(genome, config)
+    env = Environment(network, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS)
+    return env.runGov()
+
+
 def eval_genome(genomes, config):
+    futures = []
+    for genomeid, genome in genomes:
+        futures.append(distFunction.remote(genome))
+    
+    for i, (genomeid, genome) in enumerate(genomes):
+        genome.fitness =  ray.get(futures[i])
+
+
+def eval_genome_nonDist(genomes, config):
     for genomeid, genome in genomes:
         network         = neat.nn.FeedForwardNetwork.create(genome, config)
         env = Environment(network, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS)
         genome.fitness = env.runGov()
-    
+
 
 def runNeat(config):
     #pop = neat.Checkpointer.restore_checkpoint('neat-checkpoint1')
@@ -42,6 +60,8 @@ def runNeat(config):
 
 #=====================================================================================
 if __name__ == "__main__":
+    ray.init()
+
     confWriter = ConfigWriter(  n_inputs    = N_INPUTS,
                                 n_outputs   = N_INPUTS, 
                                 n_hidden    = N_HIDDEN, 
@@ -54,8 +74,9 @@ if __name__ == "__main__":
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
-
+    starttime = time.time()
     runNeat(config)
+    print(f"Execution time : {time.time() - starttime}")
     
 
     # env = Environment(None, 10000, 50, 100)

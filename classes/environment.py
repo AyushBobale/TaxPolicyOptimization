@@ -46,6 +46,6 @@ class Environment:
             #work
             #calc productivity
             #calc equality
-            pass
+            days = day ** 2 ** 2 ** 2 
             
         return score
