@@ -26,13 +26,14 @@
 
 
 ## How can we model it
+***
 * Environment 
     * has people with random inital skill level [with appropriate distribution of skill level people]
     * like 10% high skill, 30% med skill, 60% lew level
     * people from any class can avail any work it just changes their productivity [prod cannot go beyond 100%]
     * [Skill Distribution](https://www.thehindu.com/business/Economy/skill-levels-of-indian-workforce/article24035708.ece)
 
-    * ![Skill Dist](/imgs/skill-dist.png "Image")
+    * ![SkillDist](https://github.com/AyushBobale/TaxPolicyOptimization/blob/main/imgs/skill-dist.PNG?raw=True)
 
     * Total productivity is the function of sum of skill level of all people
     * Over time people can increase their skill level
@@ -43,13 +44,7 @@
     * agents can avail social welfare
     * product flow from low level to high level
     * higher skill income is earned only and only when lower skill people work [their income is a function of lower income level work]
-    * 
-
-### people class
-
-    skill level = number [from 1-100]
-    productivity = derived value [function of skill level and job level]
-
+***
 * Agent
 
     * optimizes productivity * equality 
@@ -60,4 +55,15 @@
     * agent changes taxation 
     * and social welfare
     * over time agent should maximize 
-    
+***
+* Simulation
+    * Get a input for taxation thats is or control var
+    * the gov runs for specific no of days
+    * at the end of the days metrics are calculated
+    * score is given i.e gini index
+    * such multiple envs are intantiated with differnt genomes i.e agents 
+    * and optimization is performed 
+
+## Points for documentation
+    why gentic algorithm and not any other ? 
+        - due to high variablility, no of params, chaotic nature, search space

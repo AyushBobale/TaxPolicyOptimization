@@ -1,0 +1,6 @@
+*.pkl
+config.txt
+
+__pycache__/
+*.py[cod]
+*$py.class

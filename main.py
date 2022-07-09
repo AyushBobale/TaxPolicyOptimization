@@ -1,61 +1,66 @@
-import numpy as np
-import matplotlib.pyplot as plt
+from classes.agent import Agent
+from classes.people import People
+from classes.environment import Environment
+
+from utils.configWriter import ConfigWriter
+
+import neat
+import os
+import pickle
 
 #=====================================================================================
-class People:
-    def __init__(self, skill_lvl):
-        self.skill_lvl          = skill_lvl
-        self.coins              = 0
+#VARS
+CHECKPOINT              = 10
+GENERATIONS             = 5
+POPSIZE                 = 48
+N_HIDDEN                = 2
+N_INPUTS                = 2
+N_OUTPUTS               = 2
 
+SIM_POP_SIZE            = 10000
+SIM_MEAN_SKILL          = 50
+SIM_N_DAYS              = 100
 #=====================================================================================
-class Environment:
-    def __init__(self, people, mean_skill, skill_sd=None, debug=True):
-        # These percentile values are used to mimic indian diversity
-        # values obtained from percentile values of the distribution
-        self.LOW_SKILL          = 40
-        self.MED_SKILL          = 60
-        self.HIGH_SKILL         = 85
-
-
-        self.no_people          = people
-        self.mean_skill         = mean_skill
-        self.skill_sd           = skill_sd
-        if not skill_sd:
-            self.skill_sd       =  self.mean_skill/4
-        
-        self.people_skill       = np.random.normal(
-                                        loc=self.mean_skill, 
-                                        scale=self.skill_sd, 
-                                        size=self.no_people)
-                            
-
-        self.days               = []
-        self.pop                = []
-
-        if debug:
-            print("Debug is enabled")
-        
-
-
-    def plotSkillLevel(self):
-        count, bins, ignored = plt.hist(self.people_skill, 30)
-        plt.show()
+def eval_genome(genomes, config):
+    for genomeid, genome in genomes:
+        network         = neat.nn.FeedForwardNetwork.create(genome, config)
+        env = Environment(network, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS)
+        genome.fitness = env.runGov()
     
-    def genPopulation(self):
-        for i, slvl in enumerate(self.people_skill):
-            self.pop.append(People(i))
-        return self.pop
+
+def runNeat(config):
+    #pop = neat.Checkpointer.restore_checkpoint('neat-checkpoint1')
+    pop = neat.Population(config)
+    pop.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    pop.add_reporter(stats)
+    pop.add_reporter(neat.Checkpointer(CHECKPOINT))
+
+    winner = pop.run(eval_genome, GENERATIONS)
+    with open("best_pickle.pkl", "wb") as f:
+        pickle.dump(winner, f)
 
 #=====================================================================================
-class Agent:
-    def __init__(self):
-        pass
-
-
 if __name__ == "__main__":
-    env = Environment(10000, 50)
-    env.plotSkillLevel()
-    env.genPopulation()
+    confWriter = ConfigWriter(  n_inputs    = N_INPUTS,
+                                n_outputs   = N_INPUTS, 
+                                n_hidden    = N_HIDDEN, 
+                                pop_size    = POPSIZE)
+    confWriter.writeFile('config.txt')
+
+    LOCALDIR = os.path.dirname(__file__)
+    config_path = os.path.join(LOCALDIR, "config.txt")
+
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+
+    runNeat(config)
+    
+
+    # env = Environment(None, 10000, 50, 100)
+    # env.plotSkillLevel()
+    # #env.genPopulation()
 
 
 
