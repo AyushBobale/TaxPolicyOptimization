@@ -9,11 +9,12 @@ class Environment:
         # These percentile values are used to mimic indian diversity
         # values obtained from percentile values of the distribution
         # now job level control  how much everyone gets paid
-        self.LOW_SKILL          = 40
-        self.MED_SKILL          = 60
-        self.HIGH_SKILL         = 85
+        self.LOW_SKILL          = 30
+        self.MED_SKILL          = 50
+        self.HIGH_SKILL         = 75
 
-        self.tax_rate           = [0.0, 0.10, 0.]
+        self.tax_rate           = (0.1, 0.2, 0.3, 0.4)
+        self.tax_bracket        = (self.LOW_SKILL, self.MED_SKILL, self.HIGH_SKILL)
 
 
         self.no_people          = people
@@ -35,6 +36,11 @@ class Environment:
                                         loc=self.mean_skill, 
                                         scale=self.skill_sd, 
                                         size=self.no_people))
+        self.taxes_collected    = { '<LOW'    : 0,
+                                    'LOW>MED' : 0,
+                                    'MED>HIGH': 0,
+                                    '>HIGH'   : 0}
+        self.tot_tax            = 0
         
 
 
@@ -67,6 +73,22 @@ class Environment:
                                         scale=skill_sd, 
                                         size=no_jobs))
         
+    def collectTax(self, tax):
+        self.tot_tax += tax[0]
+
+        if tax[1] <= self.LOW_SKILL:
+            self.taxes_collected['<LOW'] += tax[0]
+
+        if tax[1] > self.LOW_SKILL and tax[1] <=  self.MED_SKILL:
+            self.taxes_collected['LOW>MED'] += tax[0]
+
+        if tax[1] > self.MED_SKILL and tax[1] <= self.HIGH_SKILL:
+            self.taxes_collected['MED>HIGH'] += tax[0]
+
+        if tax[1] > self.HIGH_SKILL:
+            self.taxes_collected['>HIGH'] += tax[0]        
+
+        
 
     def runGov(self):
         score  = 0
@@ -74,17 +96,23 @@ class Environment:
 
         # optimize this loop
         for day in range(self.no_days):
+
             self.jobs.sort()
             self.pop.sort(key = lambda x : x.skill_lvl)
 
             for person in self.pop:
+
                 if  person.work(self.jobs[0]):
                     del self.jobs[0]
-                person.payTax()
+
+                self.collectTax(person.payTax(self.tax_rate, self.tax_bracket))
                 person.spend()
                 person.accquireSkill()
                 person.availSocialWelfare()
                 person.dayEnd()
+            
+            self.genJobs(self.mean_skill, self.no_people)
+
         return score
     
 
@@ -96,21 +124,21 @@ class Environment:
         for person in self.pop:
             skill_lvl.append(person.skill_lvl)
             coins.append(person.coins)
-
+        print(self.taxes_collected)
         # print(self.jobs)
         # print(skill_lvl)
-        return coins
+        return None
 
 
 if __name__ == "__main__":
-    SIM_POP_SIZE            = 100
+    SIM_POP_SIZE            = 10000
     SIM_MEAN_SKILL          = 50
     SIM_N_DAYS              = 1
+    SIM_SKILL_SD            = None
 
-    env = Environment(None, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS)
+    env = Environment(None, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS, SIM_SKILL_SD)
     starttime = time.time()
     env.runGov()
     print(f"Exec time : {time.time()-starttime}")
     print(env.getScores())
-    # env.genJobs(SIM_MEAN_SKILL, SIM_POP_SIZE, 5)
-    # env.plotSkillLevelvsJobs()
+    env.plotSkillLevelvsJobs()

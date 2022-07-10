@@ -27,11 +27,32 @@ class People:
 
         self.worked = True
         self.wage = work_lvl
-        self.coins += self.wage 
         return self.worked
     
-    def payTax(self):
-        pass
+    def payTax(self, tax_rate, tax_bracket):
+        # Try doing it dynamically
+        wage_before_tax = self.wage
+
+        if self.wage <= tax_bracket[0]:
+            tax = self.wage * tax_rate[0]
+
+        if self.wage > tax_bracket[0] and self.wage <= tax_bracket[1]:
+            tax = (tax_bracket[0] * tax_rate[0])  
+            tax += (self.wage - tax_bracket[0]) * tax_rate[1]
+        
+        if self.wage > tax_bracket[1] and self.wage <= tax_bracket[2]:
+            tax = (tax_bracket[0] * tax_rate[0])  
+            tax += (tax_bracket[1] - tax_bracket[0]) * tax_rate[1]
+            tax += (self.wage - tax_bracket[1]) * tax_rate[2]
+
+        if self.wage > tax_bracket[2]:
+            tax = (tax_bracket[0] * tax_rate[0])  
+            tax += (tax_bracket[1] - tax_bracket[0]) * tax_rate[1]
+            tax += (tax_bracket[2] - tax_bracket[1]) * tax_rate[2]
+            tax += (self.wage - tax_bracket[2]) * tax_rate[3]
+        
+        self.wage -= tax
+        return tax, wage_before_tax
     
     def spend(self):
         pass
@@ -43,6 +64,7 @@ class People:
         pass
 
     def dayEnd(self):
+        self.coins += self.wage
         self.worked = False 
     
 
