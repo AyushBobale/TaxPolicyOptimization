@@ -36,10 +36,10 @@ class Environment:
                                         loc=self.mean_skill, 
                                         scale=self.skill_sd, 
                                         size=self.no_people))
-        self.taxes_collected    = { '<LOW'    : 0,
-                                    'LOW>MED' : 0,
-                                    'MED>HIGH': 0,
-                                    '>HIGH'   : 0}
+        self.taxes_collected    = { '<LOW'    : [0,0],
+                                    'LOW>MED' : [0,0],
+                                    'MED>HIGH': [0,0],
+                                    '>HIGH'   : [0,0] }
         self.tot_tax            = 0
         
 
@@ -49,6 +49,13 @@ class Environment:
         count, bins, ignored = plt.hist(self.jobs, 30)
         plt.show()
     
+
+    def getAvgTax(self):
+        avg_tax = []
+        for value in self.taxes_collected.values():
+            avg_tax.append(value[1]/value[0])
+        return avg_tax
+
 
     def genPopulation(self):
         #done at sim time to optimize distributed performance
@@ -77,16 +84,20 @@ class Environment:
         self.tot_tax += tax[0]
 
         if tax[1] <= self.LOW_SKILL:
-            self.taxes_collected['<LOW'] += tax[0]
+            self.taxes_collected['<LOW'][1] += tax[0]
+            self.taxes_collected['<LOW'][0] += 1
 
         if tax[1] > self.LOW_SKILL and tax[1] <=  self.MED_SKILL:
-            self.taxes_collected['LOW>MED'] += tax[0]
+            self.taxes_collected['LOW>MED'][1] += tax[0]
+            self.taxes_collected['LOW>MED'][0] += 1
 
         if tax[1] > self.MED_SKILL and tax[1] <= self.HIGH_SKILL:
-            self.taxes_collected['MED>HIGH'] += tax[0]
+            self.taxes_collected['MED>HIGH'][1] += tax[0]
+            self.taxes_collected['MED>HIGH'][0] += 1
 
         if tax[1] > self.HIGH_SKILL:
-            self.taxes_collected['>HIGH'] += tax[0]        
+            self.taxes_collected['>HIGH'][1] += tax[0]        
+            self.taxes_collected['>HIGH'][0] += 1        
 
         
 
@@ -124,16 +135,19 @@ class Environment:
         for person in self.pop:
             skill_lvl.append(person.skill_lvl)
             coins.append(person.coins)
+        
         print(self.taxes_collected)
-        # print(self.jobs)
-        # print(skill_lvl)
+        print(self.tot_tax)
+
+        print("avgtax", self.getAvgTax())
+
         return None
 
 
 if __name__ == "__main__":
     SIM_POP_SIZE            = 10000
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 1
+    SIM_N_DAYS              = 100
     SIM_SKILL_SD            = None
 
     env = Environment(None, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS, SIM_SKILL_SD)
