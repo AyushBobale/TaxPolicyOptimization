@@ -54,7 +54,7 @@ def runNeat(config):
     pop.add_reporter(stats)
     pop.add_reporter(neat.Checkpointer(CHECKPOINT))
 
-    winner = pop.run(eval_genome, GENERATIONS)
+    winner = pop.run(eval_genome_nonDist, GENERATIONS)
     with open("best_pickle.pkl", "wb") as f:
         pickle.dump(winner, f)
 

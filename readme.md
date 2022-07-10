@@ -64,6 +64,28 @@
     * such multiple envs are intantiated with differnt genomes i.e agents 
     * and optimization is performed 
 
+***
+* TODO
+    * People Class
+        * based on job level have a min_wage
+        * inside work function have tolerance for lower skill workers working higher skill jobs
+        * based on earned wage cut taxes
+        * write function for basic need spending
+        * write a function for increasing skill [shall use coins and cannot be done if already worked]
+        * write function to avail social welfare
+        * finaliser function resets and day-to-day values [ dayEnd ]
+
+    * Environment class 
+        * optimize genJobs function to accout for variability
+        * job matching function
+        * such that it almost always optimally matches people with proper skill level
+
+
+***
+
 ## Points for documentation
+    Points of consideration for the simulation that are differnt from real world
+
     why gentic algorithm and not any other ? 
         - due to high variablility, no of params, chaotic nature, search space
+    
