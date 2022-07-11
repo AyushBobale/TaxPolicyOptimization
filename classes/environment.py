@@ -40,38 +40,20 @@ class Environment:
                                     'LOW>MED' : [0,0],
                                     'MED>HIGH': [0,0],
                                     '>HIGH'   : [0,0] }
-        self.tot_tax            = 0
+        self.total_tax           = 0
 
         self.welfare_provided   = { '<LOW'    : [0,0],
                                     'LOW>MED' : [0,0],
                                     'MED>HIGH': [0,0],
                                     '>HIGH'   : [0,0] }
         self.total_welfare      = 0
+
+        self.total_wealth       = 0
+        self.wealth_info        = { '<LOW'    : [0,0],
+                                    'LOW>MED' : [0,0],
+                                    'MED>HIGH': [0,0],
+                                    '>HIGH'   : [0,0] }
         
-
-
-    def plotSkillLevelvsJobs(self):
-        count, bins, ignored = plt.hist(self.people_skill, 30)
-        count, bins, ignored = plt.hist(self.jobs, 30)
-        plt.show()
-    
-
-    def getAvgTax(self):
-        avg_tax = []
-        for value in self.taxes_collected.values():
-            avg_tax.append(value[1]/value[0])
-        return avg_tax
-
-    def getAvgWelfare(self):
-        avg_welfare = []
-        for value in self.welfare_provided.values():
-            if value[0]:
-                avg_welfare.append(value[1]/value[0])
-            else:
-                avg_welfare.append(0)
-        return avg_welfare
-
-
     def genPopulation(self):
         #done at sim time to optimize distributed performance
         for i, slvl in enumerate(self.people_skill):
@@ -94,9 +76,63 @@ class Environment:
                                         loc=mean_skill, 
                                         scale=skill_sd, 
                                         size=no_jobs))
+
+    def plotSkillLevelvsJobs(self):
+        count, bins, ignored = plt.hist(self.people_skill, 30)
+        count, bins, ignored = plt.hist(self.jobs, 30)
+        plt.show()
+    
+
+    def getAvgTax(self):
+        avg_tax = []
+        for value in self.taxes_collected.values():
+            if value[0]:
+                avg_tax.append(value[1]/value[0])
+            else:
+                avg_tax.append(0)
+        return avg_tax
+
+    def getAvgWelfare(self):
+        avg_welfare = []
+        for value in self.welfare_provided.values():
+            if value[0]:
+                avg_welfare.append(value[1]/value[0])
+            else:
+                avg_welfare.append(0)
+        return avg_welfare
+    
+    def getAvgWealth(self):
+        avg_wealth = []
+        for value in self.wealth_info.values():
+            if value[0]:
+                avg_wealth.append(value[1]/value[0])
+            else:
+                avg_wealth.append(0)
+        return avg_wealth
+
+    def getWealthInfo(self):
+        for person in self.pop:
+            self.total_wealth += person.coins
+
+            if person.skill_lvl <= self.LOW_SKILL:
+                self.wealth_info['<LOW'][1] += person.coins
+                self.wealth_info['<LOW'][0] += 1
+
+            if person.skill_lvl > self.LOW_SKILL and person.skill_lvl <=  self.MED_SKILL:
+                self.wealth_info['LOW>MED'][1] += person.coins
+                self.wealth_info['LOW>MED'][0] += 1
+
+            if person.skill_lvl > self.MED_SKILL and person.skill_lvl <= self.HIGH_SKILL:
+                self.wealth_info['MED>HIGH'][1] += person.coins
+                self.wealth_info['MED>HIGH'][0] += 1
+
+            if person.skill_lvl > self.HIGH_SKILL:
+                self.wealth_info['>HIGH'][1] += person.coins        
+                self.wealth_info['>HIGH'][0] += 1     
+
         
     def collectTax(self, tax):
-        self.tot_tax += tax[0]
+        self.total_tax += tax[0]
 
         if tax[1] <= self.LOW_SKILL:
             self.taxes_collected['<LOW'][1] += tax[0]
@@ -175,7 +211,7 @@ class Environment:
         
         print("Taxes ----------------------")
         print(self.taxes_collected)
-        print(self.tot_tax)
+        print(self.total_tax)
         print("Avg tax", self.getAvgTax(), "\n")
         
 
@@ -184,13 +220,20 @@ class Environment:
         print(self.total_welfare)
         print("Avg welfare", self.getAvgWelfare(), "\n")
 
+        print("Wealth ----------------------")
+        self.getWealthInfo()
+        print(self.total_wealth)
+        print(self.wealth_info)
+        print("Avg wealth", self.getAvgWealth(), "\n")
+
+
         return None
 
 
 if __name__ == "__main__":
-    SIM_POP_SIZE            = 10000
+    SIM_POP_SIZE            = 100
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 100
+    SIM_N_DAYS              = 10
     SIM_SKILL_SD            = None
 
     env = Environment(None, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS, SIM_SKILL_SD)
