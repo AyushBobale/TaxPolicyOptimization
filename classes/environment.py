@@ -41,6 +41,12 @@ class Environment:
                                     'MED>HIGH': [0,0],
                                     '>HIGH'   : [0,0] }
         self.tot_tax            = 0
+
+        self.welfare_provided   = { '<LOW'    : [0,0],
+                                    'LOW>MED' : [0,0],
+                                    'MED>HIGH': [0,0],
+                                    '>HIGH'   : [0,0] }
+        self.total_welfare      = 0
         
 
 
@@ -55,6 +61,15 @@ class Environment:
         for value in self.taxes_collected.values():
             avg_tax.append(value[1]/value[0])
         return avg_tax
+
+    def getAvgWelfare(self):
+        avg_welfare = []
+        for value in self.welfare_provided.values():
+            if value[0]:
+                avg_welfare.append(value[1]/value[0])
+            else:
+                avg_welfare.append(0)
+        return avg_welfare
 
 
     def genPopulation(self):
@@ -97,9 +112,29 @@ class Environment:
 
         if tax[1] > self.HIGH_SKILL:
             self.taxes_collected['>HIGH'][1] += tax[0]        
-            self.taxes_collected['>HIGH'][0] += 1        
+            self.taxes_collected['>HIGH'][0] += 1     
 
-        
+
+    def provideSocialWelfare(self, support_availed):
+        if  support_availed:
+            self.total_welfare += support_availed[0]
+
+            if support_availed[1] <= self.LOW_SKILL:
+                self.welfare_provided['<LOW'][1] += support_availed[0]
+                self.welfare_provided['<LOW'][0] += 1
+
+            if support_availed[1] > self.LOW_SKILL and support_availed[1] <=  self.MED_SKILL:
+                self.welfare_provided['LOW>MED'][1] += support_availed[0]
+                self.welfare_provided['LOW>MED'][0] += 1
+
+            if support_availed[1] > self.MED_SKILL and support_availed[1] <= self.HIGH_SKILL:
+                self.welfare_provided['MED>HIGH'][1] += support_availed[0]
+                self.welfare_provided['MED>HIGH'][0] += 1
+
+            if support_availed[1] > self.HIGH_SKILL:
+                self.welfare_provided['>HIGH'][1] += support_availed[0]        
+                self.welfare_provided['>HIGH'][0] += 1 
+            
 
     def runGov(self):
         score  = 0
@@ -117,7 +152,9 @@ class Environment:
                     del self.jobs[0]
 
                 self.collectTax(person.payTax(self.tax_rate, self.tax_bracket))
-                person.spend()
+
+                self.provideSocialWelfare(person.spend(20))
+
                 person.accquireSkill()
                 person.availSocialWelfare()
                 person.dayEnd()
@@ -136,10 +173,16 @@ class Environment:
             skill_lvl.append(person.skill_lvl)
             coins.append(person.coins)
         
+        print("Taxes ----------------------")
         print(self.taxes_collected)
         print(self.tot_tax)
+        print("Avg tax", self.getAvgTax(), "\n")
+        
 
-        print("avgtax", self.getAvgTax())
+        print("Welfare ----------------------")
+        print(self.welfare_provided)
+        print(self.total_welfare)
+        print("Avg welfare", self.getAvgWelfare(), "\n")
 
         return None
 

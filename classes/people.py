@@ -54,8 +54,16 @@ class People:
         self.wage -= tax
         return tax, wage_before_tax
     
-    def spend(self):
-        pass
+    def spend(self, basic_need):
+        
+        if self.wage > basic_need:
+            self.wage -= basic_need
+            return 0
+
+        support_needed  =  basic_need - self.wage 
+        self.wage = 0
+        
+        return support_needed, self.skill_lvl
 
     def accquireSkill(self):
         pass
