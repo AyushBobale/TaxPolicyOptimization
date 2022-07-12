@@ -1,17 +1,10 @@
 #=====================================================================================
-# write function for max edge
-# it will define how much one can get extra pay for the extra skill at each job lvl
 class People:
-    def __init__(self, skill_lvl):
+    def __init__(self, skill_lvl, coins = 0):
         self.skill_lvl          = skill_lvl
-        self.coins              = 0
+        self.coins              = coins
         self.wage               = 0
 
-        # deprecated
-        # self.base_wage          = 10 should be dependent on job level
-        # point to be considered base wage should be such that 
-        # higher skill person should almost always earn more doing a higher skill job 
-        # than getting a better edge in lower skill job
     
     def work(self, work_lvl):
         # alternative implenetation
@@ -55,6 +48,8 @@ class People:
         return tax, wage_before_tax
     
     def spend(self, basic_need):
+        # acts as both spending function for basic needs
+        # and avails social welfare
         
         if self.wage > basic_need:
             self.wage -= basic_need
@@ -65,11 +60,34 @@ class People:
         
         return support_needed, self.skill_lvl
 
-    def accquireSkill(self):
-        pass
+    def accquireSkill(self, cost, multiplier):
+        
+        # idea is that the lower level of skill one has 
+        # the faster one can aqquire skill
+        # less money it takes to acquire the skill 
+        # points for consideration should debt be included
+        
+
+        if self.worked:
+            return
+        
+        # could square the values
+        calc_cost = cost * (self.skill_lvl/100) ** 2
+
+        if self.coins > calc_cost:
+            self.coins -= calc_cost
+            # for eg [square can be changed with other scaler]
+            # skill_lvl = 20
+            # then 20/100 = 0.2
+            # 0.2 ^ 2 = 0.04
+            # 1 + 0.04 = 1.04
+            # final skill = 20 * 1.04 = 2.08
+            self.skill_lvl += multiplier/self.skill_lvl
+            
+            
+        
+
     
-    def availSocialWelfare(self):
-        pass
 
     def dayEnd(self):
         self.coins += self.wage

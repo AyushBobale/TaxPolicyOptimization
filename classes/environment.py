@@ -4,11 +4,25 @@ import time
 
 from people import People
 #=====================================================================================
+# Better skill level generation function
+# same to be implented in job generation
+# basically a way to clamp vlaues within range
+# think about increasing job level
 class Environment:
-    def __init__(self, network, people, mean_skill, no_days, skill_sd=None, debug=True):
-        # These percentile values are used to mimic indian diversity
+    def __init__(   self, 
+                    network, 
+                    people, 
+                    mean_skill, 
+                    no_days, 
+                    basic_spending=20, 
+                    skill_sd=None, 
+                    education_cost = 20,
+                    initial_coins = 100,
+                    debug=True):
         # values obtained from percentile values of the distribution
         # now job level control  how much everyone gets paid
+        # try incorporating inflation not hardcoded like % increase per year 
+        # more dynamic like when money is printed
         self.LOW_SKILL          = 30
         self.MED_SKILL          = 50
         self.HIGH_SKILL         = 75
@@ -17,12 +31,15 @@ class Environment:
         self.tax_bracket        = (self.LOW_SKILL, self.MED_SKILL, self.HIGH_SKILL)
 
 
+        self.network            = network
         self.no_people          = people
         self.mean_skill         = mean_skill
+        self.no_days            = no_days
+        self.basic_spending     = basic_spending
         self.skill_sd           = skill_sd
-        self.network            = network
         if not skill_sd:
             self.skill_sd       =  self.mean_skill/4
+        self.education_cost     = education_cost
         
         self.people_skill       = np.random.normal(
                                         loc=self.mean_skill, 
@@ -30,8 +47,9 @@ class Environment:
                                         size=self.no_people)
                             
 
-        self.no_days            = no_days
+        
         self.pop                = []
+        self.initial_coins      = initial_coins
         self.jobs               = list(np.random.normal(
                                         loc=self.mean_skill, 
                                         scale=self.skill_sd, 
@@ -57,7 +75,7 @@ class Environment:
     def genPopulation(self):
         #done at sim time to optimize distributed performance
         for i, slvl in enumerate(self.people_skill):
-            self.pop.append(People(slvl))
+            self.pop.append(People(slvl, self.initial_coins))
         return self.pop
 
     
@@ -189,10 +207,10 @@ class Environment:
 
                 self.collectTax(person.payTax(self.tax_rate, self.tax_bracket))
 
-                self.provideSocialWelfare(person.spend(20))
+                self.provideSocialWelfare(person.spend(self.basic_spending))
 
-                person.accquireSkill()
-                person.availSocialWelfare()
+                person.accquireSkill(self.education_cost, 2)
+
                 person.dayEnd()
             
             self.genJobs(self.mean_skill, self.no_people)
@@ -226,17 +244,29 @@ class Environment:
         print(self.wealth_info)
         print("Avg wealth", self.getAvgWealth(), "\n")
 
-
+        print("Skill Level")
+        print(np.array(skill_lvl))
         return None
 
 
 if __name__ == "__main__":
     SIM_POP_SIZE            = 100
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 10
+    SIM_N_DAYS              = 1000
     SIM_SKILL_SD            = None
+    SIM_BASIC_SPENDING      = 20
+    SIM_EDUCATION_COST      = 50
+    SIM_INITIAL_COINS       = 100
 
-    env = Environment(None, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS, SIM_SKILL_SD)
+    env = Environment(  network         = None, 
+                        people          = SIM_POP_SIZE, 
+                        mean_skill      = SIM_MEAN_SKILL, 
+                        no_days         = SIM_N_DAYS, 
+                        basic_spending  = SIM_BASIC_SPENDING, 
+                        skill_sd        = SIM_SKILL_SD,
+                        education_cost  = SIM_EDUCATION_COST,
+                        initial_coins   = SIM_INITIAL_COINS)
+
     starttime = time.time()
     env.runGov()
     print(f"Exec time : {time.time()-starttime}")
