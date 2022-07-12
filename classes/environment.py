@@ -27,7 +27,7 @@ class Environment:
         self.MED_SKILL          = 50
         self.HIGH_SKILL         = 75
 
-        self.tax_rate           = (0.1, 0.2, 0.3, 0.4)
+        self.tax_rate           = (0.4, 0.2, 0.0, 00)
         self.tax_bracket        = (self.LOW_SKILL, self.MED_SKILL, self.HIGH_SKILL)
 
 
@@ -189,6 +189,29 @@ class Environment:
                 self.welfare_provided['>HIGH'][1] += support_availed[0]        
                 self.welfare_provided['>HIGH'][0] += 1 
             
+    def evaluateGini(self, arr):
+        # https://zhiyzuo.github.io/Plot-Lorenz/
+        arr = np.array(arr)
+        sorted_arr = arr.copy()
+        sorted_arr.sort()
+        n = arr.size
+        coef_ = 2. / n
+        const_ = (n + 1.) / n
+        weighted_sum = sum([(i+1)*yi for i, yi in enumerate(sorted_arr)])
+        return coef_*weighted_sum/(sorted_arr.sum()) - const_
+
+    def plotLorenz(self, X):
+        X = np.array(X)
+        X_lorenz = X.cumsum() / X.sum()
+        X_lorenz = np.insert(X_lorenz, 0, 0) 
+        X_lorenz[0], X_lorenz[-1]
+        fig, ax = plt.subplots(figsize=[6,6])
+        ## scatter plot of Lorenz curve
+        ax.scatter(np.arange(X_lorenz.size)/(X_lorenz.size-1), X_lorenz, 
+                marker='x', color='darkgreen', s=100)
+        ## line plot of equality
+        ax.plot([0,1], [0,1], color='k')
+        plt.show()
 
     def runGov(self):
         score  = 0
@@ -246,13 +269,17 @@ class Environment:
 
         print("Skill Level")
         print(np.array(skill_lvl))
+
+        print("\nGini Index",self.evaluateGini(coins))
+        self.plotLorenz(coins)
+
         return None
 
 
 if __name__ == "__main__":
     SIM_POP_SIZE            = 100
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 1000
+    SIM_N_DAYS              = 10000
     SIM_SKILL_SD            = None
     SIM_BASIC_SPENDING      = 20
     SIM_EDUCATION_COST      = 50
@@ -271,4 +298,4 @@ if __name__ == "__main__":
     env.runGov()
     print(f"Exec time : {time.time()-starttime}")
     print(env.getScores())
-    env.plotSkillLevelvsJobs()
+    #env.plotSkillLevelvsJobs()
