@@ -7,23 +7,18 @@ class People:
 
     
     def work(self, work_lvl):
-        # alternative implenetation
-        # if skill lvl satifies a higher job 
-        # and higher lvl job available 
-        # work higher lvl job
-        # pay = job level/work level
-
         if work_lvl > self.skill_lvl:
             self.worked = False
             self.wage = 0
             return self.worked
 
         self.worked = True
-        self.wage = work_lvl
+        self.wage = work_lvl 
         return self.worked
     
     def payTax(self, tax_rate, tax_bracket):
         # Try doing it dynamically
+        # progressive tax
         wage_before_tax = self.wage
 
         if self.wage <= tax_bracket[0]:

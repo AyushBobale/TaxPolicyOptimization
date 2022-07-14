@@ -88,4 +88,3 @@
 
     why gentic algorithm and not any other ? 
         - due to high variablility, no of params, chaotic nature, search space
-    

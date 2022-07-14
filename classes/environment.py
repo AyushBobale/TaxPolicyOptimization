@@ -1,13 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from colors import color
+from scipy.stats import truncnorm
 
 from people import People
 #=====================================================================================
-# Better skill level generation function
-# same to be implented in job generation
-# basically a way to clamp vlaues within range
+# TODO  
 # think about increasing job level
+# as we have a way to increase skill lvl
+
+# There is no concept of money vaue depreciation / appreciation for assets
+# basic spending should scale according to inflation
+# - Only Employer is government
+# - There are as such no assets to be bought currenty
+ 
 class Environment:
     def __init__(   self, 
                     network, 
@@ -23,11 +30,18 @@ class Environment:
         # now job level control  how much everyone gets paid
         # try incorporating inflation not hardcoded like % increase per year 
         # more dynamic like when money is printed
+        # for india                             tax rate
+        # under 200,000 is low income           0%
+        # 200,000 - 500,000 is middle income    5% 
+        # 500,000 - 10,00,000 is high income    12.5% averaged
+        # > 10,00,000 above high income         25%
+
+
         self.LOW_SKILL          = 30
         self.MED_SKILL          = 50
         self.HIGH_SKILL         = 75
 
-        self.tax_rate           = (0.4, 0.2, 0.0, 00)
+        self.tax_rate           = (0.0, 0.10, 0.25, 0.50)
         self.tax_bracket        = (self.LOW_SKILL, self.MED_SKILL, self.HIGH_SKILL)
 
 
@@ -40,12 +54,13 @@ class Environment:
         if not skill_sd:
             self.skill_sd       =  self.mean_skill/4
         self.education_cost     = education_cost
+
+        self.genObj              = truncnorm((0 - self.mean_skill)   / self.skill_sd, 
+                                             (100 - self.mean_skill) / self.skill_sd, 
+                                             loc=self.mean_skill, 
+                                             scale=self.skill_sd)
         
-        self.people_skill       = np.random.normal(
-                                        loc=self.mean_skill, 
-                                        scale=self.skill_sd, 
-                                        size=self.no_people)
-                            
+        self.people_skill       = list(self.genObj.rvs(self.no_people))
 
         
         self.pop                = []
@@ -78,7 +93,6 @@ class Environment:
             self.pop.append(People(slvl, self.initial_coins))
         return self.pop
 
-    
     def genJobs(self, mean_skill, no_jobs, skill_sd=None):
         # genrates available jobs in the market
         # can be customized as per needs and the env it is modeled against
@@ -100,7 +114,6 @@ class Environment:
         count, bins, ignored = plt.hist(self.jobs, 30)
         plt.show()
     
-
     def getAvgTax(self):
         avg_tax = []
         for value in self.taxes_collected.values():
@@ -147,7 +160,6 @@ class Environment:
             if person.skill_lvl > self.HIGH_SKILL:
                 self.wealth_info['>HIGH'][1] += person.coins        
                 self.wealth_info['>HIGH'][0] += 1     
-
         
     def collectTax(self, tax):
         self.total_tax += tax[0]
@@ -167,7 +179,6 @@ class Environment:
         if tax[1] > self.HIGH_SKILL:
             self.taxes_collected['>HIGH'][1] += tax[0]        
             self.taxes_collected['>HIGH'][0] += 1     
-
 
     def provideSocialWelfare(self, support_availed):
         if  support_availed:
@@ -232,11 +243,14 @@ class Environment:
 
                 self.provideSocialWelfare(person.spend(self.basic_spending))
 
-                person.accquireSkill(self.education_cost, 2)
+                person.accquireSkill(self.education_cost, 5)
 
                 person.dayEnd()
             
-            self.genJobs(self.mean_skill, self.no_people)
+            # self.genJobs(self.mean_skill, self.no_people)
+            # make a function for job generation with different 
+            # mean and SD
+            self.jobs = list(self.genObj.rvs(self.no_people))
 
         return score
     
@@ -250,27 +264,27 @@ class Environment:
             skill_lvl.append(person.skill_lvl)
             coins.append(person.coins)
         
-        print("Taxes ----------------------")
+        print(color("Taxes ----------------------", fg="Red", style="bold" ))
         print(self.taxes_collected)
         print(self.total_tax)
         print("Avg tax", self.getAvgTax(), "\n")
         
 
-        print("Welfare ----------------------")
+        print(color("Welfare ----------------------", fg="green", style="bold"))
         print(self.welfare_provided)
         print(self.total_welfare)
         print("Avg welfare", self.getAvgWelfare(), "\n")
 
-        print("Wealth ----------------------")
+        print(color("Wealth ----------------------", fg="yellow", style="bold"))
         self.getWealthInfo()
         print(self.total_wealth)
         print(self.wealth_info)
         print("Avg wealth", self.getAvgWealth(), "\n")
 
-        print("Skill Level")
-        print(np.array(skill_lvl))
+        # print("Skill Level")
+        # print(np.array(skill_lvl))
 
-        print("\nGini Index",self.evaluateGini(coins))
+        print(color("Gini Index : " + str(self.evaluateGini(coins)),fg="green", style="bold+underline"))
         self.plotLorenz(coins)
 
         return None
@@ -279,11 +293,12 @@ class Environment:
 if __name__ == "__main__":
     SIM_POP_SIZE            = 100
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 10000
+    SIM_N_DAYS              = 100
     SIM_SKILL_SD            = None
     SIM_BASIC_SPENDING      = 20
     SIM_EDUCATION_COST      = 50
     SIM_INITIAL_COINS       = 100
+    starttime = time.time()
 
     env = Environment(  network         = None, 
                         people          = SIM_POP_SIZE, 
@@ -294,8 +309,7 @@ if __name__ == "__main__":
                         education_cost  = SIM_EDUCATION_COST,
                         initial_coins   = SIM_INITIAL_COINS)
 
-    starttime = time.time()
     env.runGov()
-    print(f"Exec time : {time.time()-starttime}")
+    print(color(f"Exec time : {time.time()-starttime} Seconds ", fg="cyan", style="underline+bold"))
     print(env.getScores())
     #env.plotSkillLevelvsJobs()
