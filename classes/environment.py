@@ -7,14 +7,16 @@ from scipy.stats import truncnorm
 from people import People
 #=====================================================================================
 # TODO  
-# think about increasing job level
-# as we have a way to increase skill lvl
-
 # There is no concept of money vaue depreciation / appreciation for assets
 # basic spending should scale according to inflation
 # - Only Employer is government
 # - There are as such no assets to be bought currenty
- 
+
+# think about increasing job level
+# as we have a way to increase skill lvl
+
+#=====================================================================================
+
 class Environment:
     def __init__(   self, 
                     network, 
@@ -24,6 +26,7 @@ class Environment:
                     basic_spending=20, 
                     skill_sd=None, 
                     education_cost = 20,
+                    education_mult = 5,
                     initial_coins = 100,
                     debug=True):
         # values obtained from percentile values of the distribution
@@ -41,7 +44,11 @@ class Environment:
         self.MED_SKILL          = 50
         self.HIGH_SKILL         = 75
 
-        self.tax_rate           = (0.0, 0.10, 0.25, 0.50)
+        INDIAN_APPROX           = (0.0, 0.10, 0.25, 0.50)
+        ZERO                    = (0,0,0,0)
+        INDIAN_APPROX_REV       = (0.5, 0.25, 0.10, 0.0)
+
+        self.tax_rate           = INDIAN_APPROX_REV
         self.tax_bracket        = (self.LOW_SKILL, self.MED_SKILL, self.HIGH_SKILL)
 
 
@@ -54,6 +61,7 @@ class Environment:
         if not skill_sd:
             self.skill_sd       =  self.mean_skill/4
         self.education_cost     = education_cost
+        self.education_mult     = education_mult
 
         self.genObj              = truncnorm((0 - self.mean_skill)   / self.skill_sd, 
                                              (100 - self.mean_skill) / self.skill_sd, 
@@ -87,9 +95,30 @@ class Environment:
                                     'MED>HIGH': [0,0],
                                     '>HIGH'   : [0,0] }
         
+        self.skill_distribution = { '<LOW'    : [0,0],
+                                    'LOW>MED' : [0,0],
+                                    'MED>HIGH': [0,0],
+                                    '>HIGH'   : [0,0] }
+        
     def genPopulation(self):
         #done at sim time to optimize distributed performance
         for i, slvl in enumerate(self.people_skill):
+            if slvl <= self.LOW_SKILL:
+                self.skill_distribution['<LOW'][1] += slvl
+                self.skill_distribution['<LOW'][0] += 1
+
+            if slvl > self.LOW_SKILL and slvl <=  self.MED_SKILL:
+                self.skill_distribution['LOW>MED'][1] += slvl
+                self.skill_distribution['LOW>MED'][0] += 1
+
+            if slvl > self.MED_SKILL and slvl <= self.HIGH_SKILL:
+                self.skill_distribution['MED>HIGH'][1] += slvl
+                self.skill_distribution['MED>HIGH'][0] += 1
+
+            if slvl > self.HIGH_SKILL:
+                self.skill_distribution['>HIGH'][1] += slvl      
+                self.skill_distribution['>HIGH'][0] += 1 
+
             self.pop.append(People(slvl, self.initial_coins))
         return self.pop
 
@@ -110,8 +139,8 @@ class Environment:
                                         size=no_jobs))
 
     def plotSkillLevelvsJobs(self):
-        count, bins, ignored = plt.hist(self.people_skill, 30)
-        count, bins, ignored = plt.hist(self.jobs, 30)
+        count, bins, ignored = plt.hist(self.people_skill, int(self.no_people*0.05 + 1))
+        count, bins, ignored = plt.hist(self.jobs, int(self.no_people*0.05 + 1) )
         plt.show()
     
     def getAvgTax(self):
@@ -202,6 +231,7 @@ class Environment:
             
     def evaluateGini(self, arr):
         # https://zhiyzuo.github.io/Plot-Lorenz/
+        # higher is bad
         arr = np.array(arr)
         sorted_arr = arr.copy()
         sorted_arr.sort()
@@ -209,7 +239,7 @@ class Environment:
         coef_ = 2. / n
         const_ = (n + 1.) / n
         weighted_sum = sum([(i+1)*yi for i, yi in enumerate(sorted_arr)])
-        return coef_*weighted_sum/(sorted_arr.sum()) - const_
+        return  (coef_*weighted_sum/(sorted_arr.sum()) - const_)
 
     def plotLorenz(self, X):
         X = np.array(X)
@@ -225,7 +255,6 @@ class Environment:
         plt.show()
 
     def runGov(self):
-        score  = 0
         self.genPopulation()
 
         # optimize this loop
@@ -243,16 +272,17 @@ class Environment:
 
                 self.provideSocialWelfare(person.spend(self.basic_spending))
 
-                person.accquireSkill(self.education_cost, 5)
+                person.accquireSkill(self.education_cost, self.education_mult)
 
-                person.dayEnd()
+                person.coins += person.wage
+                person.worked = False
+                # person.dayEnd()
             
             # self.genJobs(self.mean_skill, self.no_people)
             # make a function for job generation with different 
             # mean and SD
             self.jobs = list(self.genObj.rvs(self.no_people))
 
-        return score
     
 
     def getScores(self):
@@ -281,8 +311,10 @@ class Environment:
         print(self.wealth_info)
         print("Avg wealth", self.getAvgWealth(), "\n")
 
-        # print("Skill Level")
-        # print(np.array(skill_lvl))
+        print(color("Skill Dist ----------------------", fg="cyan", style="bold"))
+        print(self.skill_distribution)
+        for i, (k, v) in enumerate(self.skill_distribution.items()): 
+            print(f"{k}      \t: {v[0]/self.no_people * 100}")
 
         print(color("Gini Index : " + str(self.evaluateGini(coins)),fg="green", style="bold+underline"))
         self.plotLorenz(coins)
@@ -291,12 +323,13 @@ class Environment:
 
 
 if __name__ == "__main__":
-    SIM_POP_SIZE            = 100
+    SIM_POP_SIZE            = 1000
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 100
-    SIM_SKILL_SD            = None
+    SIM_N_DAYS              = 1
+    SIM_SKILL_SD            = 20
     SIM_BASIC_SPENDING      = 20
-    SIM_EDUCATION_COST      = 50
+    SIM_EDUCATION_COST      = 1
+    SIM_EDUCATION_MULT      = 5
     SIM_INITIAL_COINS       = 100
     starttime = time.time()
 
@@ -307,9 +340,10 @@ if __name__ == "__main__":
                         basic_spending  = SIM_BASIC_SPENDING, 
                         skill_sd        = SIM_SKILL_SD,
                         education_cost  = SIM_EDUCATION_COST,
+                        education_mult  = SIM_EDUCATION_MULT,
                         initial_coins   = SIM_INITIAL_COINS)
 
     env.runGov()
     print(color(f"Exec time : {time.time()-starttime} Seconds ", fg="cyan", style="underline+bold"))
     print(env.getScores())
-    #env.plotSkillLevelvsJobs()
+    env.plotSkillLevelvsJobs()
