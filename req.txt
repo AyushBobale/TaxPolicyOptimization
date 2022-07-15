@@ -1,2 +1,6 @@
 python-neat
 ray[deafult]
+numpy
+matplotlib
+colors
+scipy
