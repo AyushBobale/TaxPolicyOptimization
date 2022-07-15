@@ -11,23 +11,41 @@ import ray
 import time
 
 #=====================================================================================
+# TODO 
+# Softmax implementation
+# network.activate implemntation
+
+#=====================================================================================
 #VARS
 CHECKPOINT              = 500
-GENERATIONS             = 200
-POPSIZE                 = 100
+GENERATIONS             = 100
+POPSIZE                 = 50
 N_HIDDEN                = 2
-N_INPUTS                = 2
-N_OUTPUTS               = 2
+N_INPUTS                = 4
+N_OUTPUTS               = 4
 
-SIM_POP_SIZE            = 10000
+SIM_POP_SIZE            = 10
 SIM_MEAN_SKILL          = 50
 SIM_N_DAYS              = 1000
+SIM_SKILL_SD            = 20 
+SIM_BASIC_SPENDING      = 30 ** 2
+SIM_EDUCATION_COST      = 10 ** 2
+SIM_EDUCATION_MULT      = 1
+SIM_INITIAL_COINS       = 100
 #=====================================================================================
 @ray.remote
 def distFunction(genome):
     network         = neat.nn.FeedForwardNetwork.create(genome, config)
-    env = Environment(network, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS)
-    return env.runGov()
+    env = Environment(  network         = network, 
+                            people          = SIM_POP_SIZE, 
+                            mean_skill      = SIM_MEAN_SKILL, 
+                            no_days         = SIM_N_DAYS, 
+                            basic_spending  = SIM_BASIC_SPENDING, 
+                            skill_sd        = SIM_SKILL_SD,
+                            education_cost  = SIM_EDUCATION_COST,
+                            education_mult  = SIM_EDUCATION_MULT,
+                            initial_coins   = SIM_INITIAL_COINS)
+    return  1 - env.runGov()
 
 
 def eval_genome(genomes, config):
@@ -42,8 +60,16 @@ def eval_genome(genomes, config):
 def eval_genome_nonDist(genomes, config):
     for genomeid, genome in genomes:
         network         = neat.nn.FeedForwardNetwork.create(genome, config)
-        env = Environment(network, SIM_POP_SIZE, SIM_MEAN_SKILL, SIM_N_DAYS)
-        genome.fitness = env.runGov()
+        env = Environment(  network         = network, 
+                            people          = SIM_POP_SIZE, 
+                            mean_skill      = SIM_MEAN_SKILL, 
+                            no_days         = SIM_N_DAYS, 
+                            basic_spending  = SIM_BASIC_SPENDING, 
+                            skill_sd        = SIM_SKILL_SD,
+                            education_cost  = SIM_EDUCATION_COST,
+                            education_mult  = SIM_EDUCATION_MULT,
+                            initial_coins   = SIM_INITIAL_COINS)
+        genome.fitness = 1 - env.runGov()
 
 
 def runNeat(config):
@@ -54,7 +80,7 @@ def runNeat(config):
     pop.add_reporter(stats)
     pop.add_reporter(neat.Checkpointer(CHECKPOINT))
 
-    winner = pop.run(eval_genome_nonDist, GENERATIONS)
+    winner = pop.run(eval_genome, GENERATIONS)
     with open("best_pickle.pkl", "wb") as f:
         pickle.dump(winner, f)
 

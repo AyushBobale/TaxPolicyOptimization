@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import time
 from colors import color
 from scipy.stats import truncnorm
+import sys, os
+from numpy import exp
+
+sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 from people import People
 #=====================================================================================
@@ -48,7 +52,7 @@ class Environment:
         ZERO                    = (0,0,0,0)
         INDIAN_APPROX_REV       = (0.5, 0.25, 0.10, 0.0)
 
-        self.tax_rate           = INDIAN_APPROX_REV
+        self.tax_rate           = ZERO
         self.tax_bracket        = (self.LOW_SKILL, self.MED_SKILL, self.HIGH_SKILL)
 
 
@@ -229,9 +233,14 @@ class Environment:
                 self.welfare_provided['>HIGH'][1] += support_availed[0]        
                 self.welfare_provided['>HIGH'][0] += 1 
             
-    def evaluateGini(self, arr):
+    def evaluateGini(self, arr=None):
         # https://zhiyzuo.github.io/Plot-Lorenz/
         # higher is bad
+        if not arr:
+            arr = []
+            for person in self.pop:
+                arr.append(person.coins)
+            
         arr = np.array(arr)
         sorted_arr = arr.copy()
         sorted_arr.sort()
@@ -249,7 +258,7 @@ class Environment:
         fig, ax = plt.subplots(figsize=[6,6])
         ## scatter plot of Lorenz curve
         ax.scatter(np.arange(X_lorenz.size)/(X_lorenz.size-1), X_lorenz, 
-                marker='x', color='darkgreen', s=100)
+                marker='.', color='red', s=10)
         ## line plot of equality
         ax.plot([0,1], [0,1], color='k')
         plt.show()
@@ -257,6 +266,15 @@ class Environment:
     def runGov(self):
         self.genPopulation()
 
+        inputs = []
+        for i, (k, v) in enumerate(self.skill_distribution.items()): 
+            inputs.append(v[0]/self.no_people * 100)
+
+        outputs = self.network.activate(inputs)
+        e   = exp(outputs)
+        sfm = e / e.sum()
+        self.tax_rate = sfm
+        
         # optimize this loop
         for day in range(self.no_days):
 
@@ -282,6 +300,8 @@ class Environment:
             # make a function for job generation with different 
             # mean and SD
             self.jobs = list(self.genObj.rvs(self.no_people))
+        
+        return self.evaluateGini()
 
     
 
@@ -323,11 +343,11 @@ class Environment:
 
 
 if __name__ == "__main__":
-    SIM_POP_SIZE            = 1000
+    SIM_POP_SIZE            = 100
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 1
+    SIM_N_DAYS              = 1000
     SIM_SKILL_SD            = 20
-    SIM_BASIC_SPENDING      = 20
+    SIM_BASIC_SPENDING      = 30 * 30
     SIM_EDUCATION_COST      = 1
     SIM_EDUCATION_MULT      = 5
     SIM_INITIAL_COINS       = 100
