@@ -1,4 +1,4 @@
-python-neat
+neat-python
 ray[deafult]
 numpy
 matplotlib

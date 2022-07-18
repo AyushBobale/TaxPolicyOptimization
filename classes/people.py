@@ -6,7 +6,7 @@ class People:
         self.wage               = 0
 
     
-    def work(self, work_lvl):
+    def work(self, work_lvl, expo):
         # instead of linear scaling have exp
         if work_lvl > self.skill_lvl:
             self.worked = False
@@ -14,7 +14,7 @@ class People:
             return self.worked
 
         self.worked = True
-        self.wage = work_lvl * work_lvl
+        self.wage = (work_lvl/10) ** expo
         return self.worked
     
     def payTax(self, tax_rate, tax_bracket):

@@ -9,21 +9,26 @@ import os
 import pickle
 import ray
 import time
+from colors import color
 
 #=====================================================================================
 # TODO 
-# Softmax implementation
-# network.activate implemntation
+# More better metric of fitness
+#   - gini index
+#   - procutivity = wealth + tax - welfare
+#
+# change config writer to neat's own provided module
 
 #=====================================================================================
 #VARS
 CHECKPOINT              = 500
-GENERATIONS             = 100
-POPSIZE                 = 50
+GENERATIONS             = 300
+POPSIZE                 = 32
 N_HIDDEN                = 2
-N_INPUTS                = 4
+N_INPUTS                = 5
 N_OUTPUTS               = 4
 
+EXPO                    = 5         # indicates level how fast can skilled become richer
 SIM_POP_SIZE            = 10
 SIM_MEAN_SKILL          = 50
 SIM_N_DAYS              = 1000
@@ -84,6 +89,60 @@ def runNeat(config):
     with open("best_pickle.pkl", "wb") as f:
         pickle.dump(winner, f)
 
+
+def testNeat(config):
+    print(color("Testing model ==========================================: ", fg="green",style="bold+underline"))
+    with open("best_pickle.pkl","rb") as f:
+        winner = pickle.load(f)
+    
+    network         = neat.nn.FeedForwardNetwork.create(winner, config)
+
+    env = Environment(  network         = network,  
+                        people          = SIM_POP_SIZE, 
+                        mean_skill      = SIM_MEAN_SKILL, 
+                        no_days         = SIM_N_DAYS + 0, 
+                        basic_spending  = SIM_BASIC_SPENDING, 
+                        skill_sd        = SIM_SKILL_SD,
+                        education_cost  = SIM_EDUCATION_COST,
+                        education_mult  = SIM_EDUCATION_MULT,
+                        initial_coins   = SIM_INITIAL_COINS)
+    env.runGov(test=True)
+
+    coins = []
+    skill_lvl = []
+    
+    
+    for person in env.pop:
+        skill_lvl.append(person.skill_lvl)
+        coins.append(person.coins)
+    
+    print(color("Taxes ----------------------", fg="Red", style="bold" ))
+    print(env.taxes_collected)
+    print(env.total_tax)
+    print("Avg tax", env.getAvgTax(), "\n")
+    
+
+    print(color("Welfare ----------------------", fg="green", style="bold"))
+    print(env.welfare_provided)
+    print(env.total_welfare)
+    print("Avg welfare", env.getAvgWelfare(), "\n")
+
+    print(color("Wealth ----------------------", fg="yellow", style="bold"))
+    env.getWealthInfo()
+    print(env.total_wealth)
+    print(env.wealth_info)
+    print("Avg wealth", env.getAvgWealth(), "\n")
+
+    print(color("Skill Dist ----------------------", fg="cyan", style="bold"))
+    print(env.skill_distribution)
+    for i, (k, v) in enumerate(env.skill_distribution.items()): 
+        print(f"{k}      \t: {v[0]/env.no_people * 100}")
+
+    print(color("Gini Index : " + str(env.evaluateGini(coins)),fg="green", style="bold+underline"))
+    env.plotLorenz(coins)
+                            
+
+
 #=====================================================================================
 if __name__ == "__main__":
     ray.init()
@@ -100,15 +159,13 @@ if __name__ == "__main__":
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
+    
+
     starttime = time.time()
     runNeat(config)
     print(f"Execution time : {time.time() - starttime}")
     
-
-    # env = Environment(None, 10000, 50, 100)
-    # env.plotSkillLevel()
-    # #env.genPopulation()
-
-
-
+    
+    testNeat(config)
+    
 

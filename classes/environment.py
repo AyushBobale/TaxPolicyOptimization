@@ -1,16 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-from colors import color
+# from colors import color
 from scipy.stats import truncnorm
 import sys, os
 from numpy import exp
+from sklearn import preprocessing
 
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 from people import People
 #=====================================================================================
 # TODO  
+# probability of working is a function of tax rate
+# simulation needs to be more unequal
+# expo implementation
 # There is no concept of money vaue depreciation / appreciation for assets
 # basic spending should scale according to inflation
 # - Only Employer is government
@@ -32,7 +36,7 @@ class Environment:
                     education_cost = 20,
                     education_mult = 5,
                     initial_coins = 100,
-                    debug=True):
+                    expo = 1):
         # values obtained from percentile values of the distribution
         # now job level control  how much everyone gets paid
         # try incorporating inflation not hardcoded like % increase per year 
@@ -53,7 +57,7 @@ class Environment:
         INDIAN_APPROX_REV       = (0.5, 0.25, 0.10, 0.0)
 
         self.tax_rate           = ZERO
-        self.tax_bracket        = (self.LOW_SKILL, self.MED_SKILL, self.HIGH_SKILL)
+        self.tax_bracket        = ((self.LOW_SKILL/10) ** expo, (self.MED_SKILL/10) ** expo, (self.HIGH_SKILL/10)  ** expo)
 
 
         self.network            = network
@@ -66,6 +70,7 @@ class Environment:
             self.skill_sd       =  self.mean_skill/4
         self.education_cost     = education_cost
         self.education_mult     = education_mult
+        self.expo = expo
 
         self.genObj              = truncnorm((0 - self.mean_skill)   / self.skill_sd, 
                                              (100 - self.mean_skill) / self.skill_sd, 
@@ -195,6 +200,7 @@ class Environment:
                 self.wealth_info['>HIGH'][0] += 1     
         
     def collectTax(self, tax):
+        # print("tax collection", tax)
         self.total_tax += tax[0]
 
         if tax[1] <= self.LOW_SKILL:
@@ -263,18 +269,28 @@ class Environment:
         ax.plot([0,1], [0,1], color='k')
         plt.show()
 
-    def runGov(self):
+    def runGov(self, debug=False, test=False):
         self.genPopulation()
 
-        inputs = []
-        for i, (k, v) in enumerate(self.skill_distribution.items()): 
-            inputs.append(v[0]/self.no_people * 100)
+        # creating input vector =================================================
+        if not debug:
+            inputs = []
+            for i, (k, v) in enumerate(self.skill_distribution.items()): 
+                inputs.append(v[0])
+            inputs.append(self.basic_spending/100)
 
-        outputs = self.network.activate(inputs)
-        e   = exp(outputs)
-        sfm = e / e.sum()
-        self.tax_rate = sfm
+        # creating output vector =================================================
+            outputs = self.network.activate(inputs)
+            e   = exp(outputs)
+            sfm = e / e.sum()
+            self.tax_rate = sfm
         
+        if test:
+            print(outputs)
+            print(self.tax_rate)
+        
+        
+
         # optimize this loop
         for day in range(self.no_days):
 
@@ -283,7 +299,7 @@ class Environment:
 
             for person in self.pop:
 
-                if  person.work(self.jobs[0]):
+                if  person.work(self.jobs[0], self.expo):
                     del self.jobs[0]
 
                 self.collectTax(person.payTax(self.tax_rate, self.tax_bracket))
@@ -343,13 +359,16 @@ class Environment:
 
 
 if __name__ == "__main__":
+    from colors import color
+
+    EXPO                    = 4
     SIM_POP_SIZE            = 100
     SIM_MEAN_SKILL          = 50
     SIM_N_DAYS              = 1000
     SIM_SKILL_SD            = 20
-    SIM_BASIC_SPENDING      = 30 * 30
-    SIM_EDUCATION_COST      = 1
-    SIM_EDUCATION_MULT      = 5
+    SIM_BASIC_SPENDING      = (10/10) ** EXPO
+    SIM_EDUCATION_COST      = (5/10) ** EXPO
+    SIM_EDUCATION_MULT      = 1
     SIM_INITIAL_COINS       = 100
     starttime = time.time()
 
@@ -361,9 +380,10 @@ if __name__ == "__main__":
                         skill_sd        = SIM_SKILL_SD,
                         education_cost  = SIM_EDUCATION_COST,
                         education_mult  = SIM_EDUCATION_MULT,
-                        initial_coins   = SIM_INITIAL_COINS)
+                        initial_coins   = SIM_INITIAL_COINS,
+                        expo            = EXPO)
 
-    env.runGov()
+    env.runGov(debug=True)
     print(color(f"Exec time : {time.time()-starttime} Seconds ", fg="cyan", style="underline+bold"))
     print(env.getScores())
     env.plotSkillLevelvsJobs()
