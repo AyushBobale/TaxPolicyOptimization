@@ -11,3 +11,4 @@ test.py
 .tmp*
 
 ignore*
+pckls/

@@ -25,18 +25,14 @@ from people import People
 
 #=====================================================================================
 
+#Stupid work around del it later
+def color(text, style, fg):
+    return text
+
 class Environment:
     def __init__(   self, 
                     network, 
-                    people, 
-                    mean_skill, 
-                    no_days, 
-                    basic_spending=20, 
-                    skill_sd=None, 
-                    education_cost = 20,
-                    education_mult = 5,
-                    initial_coins = 100,
-                    expo = 1):
+                    args):
         # values obtained from percentile values of the distribution
         # now job level control  how much everyone gets paid
         # try incorporating inflation not hardcoded like % increase per year 
@@ -57,20 +53,24 @@ class Environment:
         INDIAN_APPROX_REV       = (0.5, 0.25, 0.10, 0.0)
 
         self.tax_rate           = ZERO
-        self.tax_bracket        = ((self.LOW_SKILL/10) ** expo, (self.MED_SKILL/10) ** expo, (self.HIGH_SKILL/10)  ** expo)
+        # Why TF am i doing this exponent =====================================
+
+        self.tax_bracket        = ( (self.LOW_SKILL/10) ** args["expo"], 
+                                    (self.MED_SKILL/10) ** args["expo"], 
+                                    (self.HIGH_SKILL/10)  ** args["expo"])
 
 
         self.network            = network
-        self.no_people          = people
-        self.mean_skill         = mean_skill
-        self.no_days            = no_days
-        self.basic_spending     = basic_spending
-        self.skill_sd           = skill_sd
-        if not skill_sd:
+        self.no_people          = args["sim_pop_size"]
+        self.mean_skill         = args["sim_mean_skill"]
+        self.no_days            = args["sim_n_days"]
+        self.basic_spending     = args["sim_basic_spending"]
+        self.skill_sd           = args["sim_skill_sd"]
+        if not args["sim_skill_sd"]:
             self.skill_sd       =  self.mean_skill/4
-        self.education_cost     = education_cost
-        self.education_mult     = education_mult
-        self.expo = expo
+        self.education_cost     = args["sim_education_cost"]
+        self.education_mult     = args["sim_education_mult"]
+        self.expo = args["expo"]
 
         self.genObj              = truncnorm((0 - self.mean_skill)   / self.skill_sd, 
                                              (100 - self.mean_skill) / self.skill_sd, 
@@ -81,7 +81,7 @@ class Environment:
 
         
         self.pop                = []
-        self.initial_coins      = initial_coins
+        self.initial_coins      = args["sim_initial_coins"]
         self.jobs               = list(np.random.normal(
                                         loc=self.mean_skill, 
                                         scale=self.skill_sd, 
@@ -316,8 +316,17 @@ class Environment:
             # make a function for job generation with different 
             # mean and SD
             self.jobs = list(self.genObj.rvs(self.no_people))
+
         
-        return self.evaluateGini()
+        # min max scale the tax vs welfare 
+        # subtract tax from welfare
+        # 0 = both are same
+        # 1 = no welfare    [availed]
+        # -1 = no tax       [collected]
+        welfare_per = self.total_welfare/(self.total_tax + self.total_welfare)
+        # one plus because when the % of welfare becomes low it will ignore gini index
+        #print(f"Gini : {(1 + self.evaluateGini())}, {(1 + welfare_per)}, {(1 + self.evaluateGini()) * (1 + welfare_per)}")
+        return (1 + self.evaluateGini()) * (1 + welfare_per) # have changes here to maximize tax+ wealth and minimize welfare
 
     
 
@@ -352,6 +361,9 @@ class Environment:
         for i, (k, v) in enumerate(self.skill_distribution.items()): 
             print(f"{k}      \t: {v[0]/self.no_people * 100}")
 
+        print(color("Welfare to tax ratio ------------------", fg="yellow", style="bold"))
+        print(self.total_welfare/ (self.total_tax + self.total_welfare))
+
         print(color("Gini Index : " + str(self.evaluateGini(coins)),fg="green", style="bold+underline"))
         self.plotLorenz(coins)
 
@@ -372,6 +384,7 @@ if __name__ == "__main__":
     SIM_INITIAL_COINS       = 100
     starttime = time.time()
 
+    # for future me change it to args 
     env = Environment(  network         = None, 
                         people          = SIM_POP_SIZE, 
                         mean_skill      = SIM_MEAN_SKILL, 

@@ -7,8 +7,8 @@ class ConfigWriter:
 
         self.text   = f"""
 [NEAT]
-fitness_criterion     = max
-fitness_threshold     = 0.8
+fitness_criterion     = min
+fitness_threshold     = 1
 pop_size              = {pop_size}
 reset_on_extinction   = False
 
