@@ -2,5 +2,5 @@ neat-python
 ray[deafult]
 numpy
 matplotlib
-colors
 scipy
+colored

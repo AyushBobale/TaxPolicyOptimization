@@ -24,11 +24,9 @@ from people import People
 # as we have a way to increase skill lvl
 
 #=====================================================================================
-
-#Stupid work around del it later
 def color(text, style, fg):
     return text
-
+    
 class Environment:
     def __init__(   self, 
                     network, 
@@ -53,8 +51,12 @@ class Environment:
         INDIAN_APPROX_REV       = (0.5, 0.25, 0.10, 0.0)
 
         self.tax_rate           = ZERO
+        # FAQ
         # Why TF am i doing this exponent =====================================
-
+        # Refer payTax and work funtion from People class
+        # we are paying people the 10th of thier skill  which is raised to the expoenent 
+        # we are using the same function to decide the tax bracket as with the same exponent 
+        # so that there is the same funtio that decides pay and tax boundaries based upon our skill dist
         self.tax_bracket        = ( (self.LOW_SKILL/10) ** args["expo"], 
                                     (self.MED_SKILL/10) ** args["expo"], 
                                     (self.HIGH_SKILL/10)  ** args["expo"])
@@ -367,13 +369,17 @@ class Environment:
         print(color("Gini Index : " + str(self.evaluateGini(coins)),fg="green", style="bold+underline"))
         self.plotLorenz(coins)
 
+        print(color(f"Skill : {np.array(skill_lvl)}", fg="red", style="bold"))
+
         return None
 
 
 if __name__ == "__main__":
-    from colors import color
 
-    EXPO                    = 4
+    def color(text, fg, style):
+        return text
+        
+    EXPO                    = 1
     SIM_POP_SIZE            = 100
     SIM_MEAN_SKILL          = 50
     SIM_N_DAYS              = 1000
@@ -385,16 +391,18 @@ if __name__ == "__main__":
     starttime = time.time()
 
     # for future me change it to args 
-    env = Environment(  network         = None, 
-                        people          = SIM_POP_SIZE, 
-                        mean_skill      = SIM_MEAN_SKILL, 
-                        no_days         = SIM_N_DAYS, 
-                        basic_spending  = SIM_BASIC_SPENDING, 
-                        skill_sd        = SIM_SKILL_SD,
-                        education_cost  = SIM_EDUCATION_COST,
-                        education_mult  = SIM_EDUCATION_MULT,
-                        initial_coins   = SIM_INITIAL_COINS,
-                        expo            = EXPO)
+    args = {"expo"              : EXPO,
+            "sim_pop_size"      : SIM_POP_SIZE,
+            "sim_mean_skill"    : SIM_MEAN_SKILL,
+            "sim_n_days"        : SIM_N_DAYS,
+            "sim_skill_sd"      : SIM_SKILL_SD,
+            "sim_basic_spending": SIM_BASIC_SPENDING,
+            "sim_education_cost": SIM_EDUCATION_COST,
+            "sim_education_mult": SIM_EDUCATION_MULT,
+            "sim_initial_coins" : SIM_INITIAL_COINS}
+
+    env = Environment(  network     = None, 
+                        args        = args )
 
     env.runGov(debug=True)
     print(color(f"Exec time : {time.time()-starttime} Seconds ", fg="cyan", style="underline+bold"))

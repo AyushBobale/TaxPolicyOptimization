@@ -4,6 +4,7 @@ from classes.environment import Environment
 from classes.saveModel import SaveModel
 
 from utils.configWriter import ConfigWriter
+from utils.termColors import TermColors
 
 import neat
 import os
@@ -11,10 +12,15 @@ import pickle
 import ray
 import time
 import sys
-# from colors import color
+import colored
+from colored import stylize, fg, bg, attr
+
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 # TODO 
+# *** Colored refactor from colors to coloured
+# ** code clean up [not optimization]
+# sys arg execution flow control 
 # More better metric of fitness
 #   - gini index
 #   - procutivity = wealth + tax - welfare
@@ -25,21 +31,23 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 #VARS
 CHECKPOINT              = 500
-GENERATIONS             = 20
+GENERATIONS             = 2
 POPSIZE                 = 64
 N_HIDDEN                = 2
 N_INPUTS                = 5
 N_OUTPUTS               = 4
 
 EXPO                    = 2         # indicates level how fast can skilled become richer
-SIM_POP_SIZE            = 200
-SIM_MEAN_SKILL          = 200
-SIM_N_DAYS              = 30
+SIM_POP_SIZE            = 50
+SIM_MEAN_SKILL          = 50
+SIM_N_DAYS              = 1000
 SIM_SKILL_SD            = 20 
-SIM_BASIC_SPENDING      = (12/10) ** EXPO
-SIM_EDUCATION_COST      = (12/10) ** EXPO
+SIM_BASIC_SPENDING      = (20/10) ** EXPO  
+SIM_EDUCATION_COST      = (25/10) ** EXPO
 SIM_EDUCATION_MULT      = 1
 SIM_INITIAL_COINS       = 100
+
+#this function (n/10) ** Expo gives us at what skill lvl is it possible to survive
 
 args = {"gens"              : GENERATIONS,
         "popsize"           : POPSIZE,
@@ -60,8 +68,6 @@ args = {"gens"              : GENERATIONS,
 # Stupid work around del it later from final code 
 # work around for colab
 
-def color(text, style, fg):
-    return text
 
 @ray.remote
 def distFunction(genome):
@@ -96,14 +102,17 @@ def runNeat(config):
     pop.add_reporter(stats)
     pop.add_reporter(neat.Checkpointer(CHECKPOINT))
 
-    winner = pop.run(eval_genome, GENERATIONS)
+    if sys.argv[1] == "1":
+        winner = pop.run(eval_genome, GENERATIONS)
+    if sys.argv[1] == "0":
+        winner = pop.run(eval_genome_nonDist, GENERATIONS)
     model = SaveModel(winner, args)
     with open("best_pickle.pkl", "wb") as f:
         pickle.dump(model, f)
 
 
 def testNeat(config):
-    print(color("Testing model ==========================================: ", fg="green",style="bold+underline"))
+    print("Testing model ==========================================: ")
     #/content/drive/Othercomputers/My computer (1)/TaxPolicyOptimization/
     with open("best_pickle.pkl","rb") as f:
         model = pickle.load(f)
@@ -119,7 +128,13 @@ def testNeat(config):
                             
 #=====================================================================================
 if __name__ == "__main__":
-    ray.init()
+    '''
+    1 : Distributed mode [1 | 0]
+    2 : Test | Train | Train & Test [0 | 1 | 2]
+    3 : Colab Mode [0 | 1]
+    '''
+    if sys.argv[1] == "1":
+        ray.init()
 
     confWriter = ConfigWriter(  n_inputs    = N_INPUTS,
                                 n_outputs   = N_INPUTS, 
@@ -134,12 +149,14 @@ if __name__ == "__main__":
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
     
-
-    starttime = time.time()
-    runNeat(config)
-    print(f"Execution time : {time.time() - starttime}")
+    if sys.argv[2] == "1" or sys.argv[2] == "2":
+        starttime = time.time()
+        runNeat(config)
+        print(f"Execution time : {time.time() - starttime}")
     
-    
-    testNeat(config)
+    if sys.argv[2] == "0" or sys.argv[2] == "2":
+        testNeat(config)
+        
+    print(stylize("Test", TermColors.info))
     
 
