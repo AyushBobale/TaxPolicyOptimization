@@ -18,9 +18,8 @@ from colored import stylize, fg, bg, attr
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 # TODO 
-# *** Colored refactor from colors to coloured
+# *** Colored make a new test file as the curennt ray import in main messes with the colors
 # ** code clean up [not optimization]
-# sys arg execution flow control 
 # More better metric of fitness
 #   - gini index
 #   - procutivity = wealth + tax - welfare
@@ -31,16 +30,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 #VARS
 CHECKPOINT              = 500
-GENERATIONS             = 2
-POPSIZE                 = 64
+GENERATIONS             = 20
+POPSIZE                 = 16
 N_HIDDEN                = 2
 N_INPUTS                = 5
 N_OUTPUTS               = 4
 
 EXPO                    = 2         # indicates level how fast can skilled become richer
-SIM_POP_SIZE            = 50
+SIM_POP_SIZE            = 200
 SIM_MEAN_SKILL          = 50
-SIM_N_DAYS              = 1000
+SIM_N_DAYS              = 100
 SIM_SKILL_SD            = 20 
 SIM_BASIC_SPENDING      = (20/10) ** EXPO  
 SIM_EDUCATION_COST      = (25/10) ** EXPO
@@ -65,9 +64,6 @@ args = {"gens"              : GENERATIONS,
         "sim_initial_coins" : SIM_INITIAL_COINS}
 
 #=====================================================================================
-# Stupid work around del it later from final code 
-# work around for colab
-
 
 @ray.remote
 def distFunction(genome):
@@ -75,7 +71,6 @@ def distFunction(genome):
     env = Environment(  network         = network, 
                         args            = args)
     return 2 - env.runGov()
-
 
 def eval_genome(genomes, config):
     futures = []
@@ -91,6 +86,8 @@ def eval_genome_nonDist(genomes, config):
         network         = neat.nn.FeedForwardNetwork.create(genome, config)
         env = Environment(  network         = network, 
                             args            = args)
+        
+        print(2 - env.runGov())
         genome.fitness = 2 - env.runGov()
 
 
@@ -112,12 +109,13 @@ def runNeat(config):
 
 
 def testNeat(config):
-    print("Testing model ==========================================: ")
+    # Colored.stylize
+    print(stylize("Testing model ==========================================: ", TermColors.infoHead))
     #/content/drive/Othercomputers/My computer (1)/TaxPolicyOptimization/
     with open("best_pickle.pkl","rb") as f:
         model = pickle.load(f)
     winner = model.winner
-    print(f"Args : {model.args}")
+    # print(f"Args : {model.args}")
     
     network         = neat.nn.FeedForwardNetwork.create(winner, config)
 
@@ -131,8 +129,8 @@ if __name__ == "__main__":
     '''
     1 : Distributed mode [1 | 0]
     2 : Test | Train | Train & Test [0 | 1 | 2]
-    3 : Colab Mode [0 | 1]
     '''
+    print(sys.argv)
     if sys.argv[1] == "1":
         ray.init()
 
@@ -158,5 +156,3 @@ if __name__ == "__main__":
         testNeat(config)
         
     print(stylize("Test", TermColors.info))
-    
-

@@ -1,32 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-# from colors import color
 from scipy.stats import truncnorm
 import sys, os
 from numpy import exp
 from sklearn import preprocessing
+import colored
+from colored import stylize, fg, bg, attr
 
 sys.path.append(os.path.join(os.path.dirname(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from people import People
+from utils.termColors import TermColors
 #=====================================================================================
 # TODO  
 # probability of working is a function of tax rate
-# simulation needs to be more unequal
-# expo implementation
+# following update would be scoring based on total productivity
+# average productiviy could be calculated as 
+# (total wealth + total tax)/(no_days * no_people) would be a expo function as it depends on it
+
 # There is no concept of money vaue depreciation / appreciation for assets
 # basic spending should scale according to inflation
 # - Only Employer is government
 # - There are as such no assets to be bought currenty
 
-# think about increasing job level
+# think about increasing job level as a result of increasing economy
 # as we have a way to increase skill lvl
 
 #=====================================================================================
-def color(text, style, fg):
-    return text
-    
 class Environment:
     def __init__(   self, 
                     network, 
@@ -50,7 +52,7 @@ class Environment:
         ZERO                    = (0,0,0,0)
         INDIAN_APPROX_REV       = (0.5, 0.25, 0.10, 0.0)
 
-        self.tax_rate           = ZERO
+        self.tax_rate           = INDIAN_APPROX_REV
         # FAQ
         # Why TF am i doing this exponent =====================================
         # Refer payTax and work funtion from People class
@@ -113,6 +115,7 @@ class Environment:
         
     def genPopulation(self):
         #done at sim time to optimize distributed performance
+        self.pop                = []
         for i, slvl in enumerate(self.people_skill):
             if slvl <= self.LOW_SKILL:
                 self.skill_distribution['<LOW'][1] += slvl
@@ -182,6 +185,13 @@ class Environment:
         return avg_wealth
 
     def getWealthInfo(self):
+        self.wealth_info= { '<LOW'    : [0,0],
+                            'LOW>MED' : [0,0],
+                            'MED>HIGH': [0,0],
+                            '>HIGH'   : [0,0] }
+
+        self.total_wealth = 0
+
         for person in self.pop:
             self.total_wealth += person.coins
 
@@ -290,15 +300,12 @@ class Environment:
         if test:
             print(outputs)
             print(self.tax_rate)
-        
-        
 
         # optimize this loop
         for day in range(self.no_days):
 
             self.jobs.sort()
             self.pop.sort(key = lambda x : x.skill_lvl)
-
             for person in self.pop:
 
                 if  person.work(self.jobs[0], self.expo):
@@ -317,8 +324,8 @@ class Environment:
             # self.genJobs(self.mean_skill, self.no_people)
             # make a function for job generation with different 
             # mean and SD
+            
             self.jobs = list(self.genObj.rvs(self.no_people))
-
         
         # min max scale the tax vs welfare 
         # subtract tax from welfare
@@ -326,9 +333,13 @@ class Environment:
         # 1 = no welfare    [availed]
         # -1 = no tax       [collected]
         welfare_per = self.total_welfare/(self.total_tax + self.total_welfare)
-        # one plus because when the % of welfare becomes low it will ignore gini index
-        #print(f"Gini : {(1 + self.evaluateGini())}, {(1 + welfare_per)}, {(1 + self.evaluateGini()) * (1 + welfare_per)}")
-        return (1 + self.evaluateGini()) * (1 + welfare_per) # have changes here to maximize tax+ wealth and minimize welfare
+        # one plus because when the % of welfare becomes low it will ignore gini index 
+        # manage this somehow i ma leavinng this for future me
+
+        self.getWealthInfo()
+        avg_wealth_reci = (self.no_days * self.no_people)/(self.total_tax + self.total_wealth)
+        # print(stylize((avg_wealth_reci), TermColors.danger))
+        return (1 + self.evaluateGini()) * (1 + welfare_per) * (1 * avg_wealth_reci)# have changes here to maximize tax+ wealth and minimize welfare
 
     
 
@@ -341,48 +352,42 @@ class Environment:
             skill_lvl.append(person.skill_lvl)
             coins.append(person.coins)
         
-        print(color("Taxes ----------------------", fg="Red", style="bold" ))
+        print(stylize("Taxes ----------------------", TermColors.dangerHead ))
         print(self.taxes_collected)
         print(self.total_tax)
         print("Avg tax", self.getAvgTax(), "\n")
         
 
-        print(color("Welfare ----------------------", fg="green", style="bold"))
+        print(stylize("Welfare ----------------------", TermColors.successHead))
         print(self.welfare_provided)
         print(self.total_welfare)
         print("Avg welfare", self.getAvgWelfare(), "\n")
 
-        print(color("Wealth ----------------------", fg="yellow", style="bold"))
-        self.getWealthInfo()
+        print(stylize("Wealth ----------------------", TermColors.warnHead))
         print(self.total_wealth)
         print(self.wealth_info)
         print("Avg wealth", self.getAvgWealth(), "\n")
 
-        print(color("Skill Dist ----------------------", fg="cyan", style="bold"))
+        print(stylize("Skill Dist ----------------------", TermColors.infoHead))
         print(self.skill_distribution)
         for i, (k, v) in enumerate(self.skill_distribution.items()): 
             print(f"{k}      \t: {v[0]/self.no_people * 100}")
 
-        print(color("Welfare to tax ratio ------------------", fg="yellow", style="bold"))
+        print(stylize("Welfare to tax ratio ------------------", TermColors.info))
         print(self.total_welfare/ (self.total_tax + self.total_welfare))
 
-        print(color("Gini Index : " + str(self.evaluateGini(coins)),fg="green", style="bold+underline"))
+        print(stylize("Gini Index : " + str(self.evaluateGini(coins)), TermColors.success))
         self.plotLorenz(coins)
 
-        print(color(f"Skill : {np.array(skill_lvl)}", fg="red", style="bold"))
-
+        print(stylize(f"Skill : {np.array(skill_lvl)}", TermColors.info))
         return None
 
 
 if __name__ == "__main__":
-
-    def color(text, fg, style):
-        return text
-        
     EXPO                    = 1
-    SIM_POP_SIZE            = 100
+    SIM_POP_SIZE            = 10
     SIM_MEAN_SKILL          = 50
-    SIM_N_DAYS              = 1000
+    SIM_N_DAYS              = 300
     SIM_SKILL_SD            = 20
     SIM_BASIC_SPENDING      = (10/10) ** EXPO
     SIM_EDUCATION_COST      = (5/10) ** EXPO
@@ -405,6 +410,6 @@ if __name__ == "__main__":
                         args        = args )
 
     env.runGov(debug=True)
-    print(color(f"Exec time : {time.time()-starttime} Seconds ", fg="cyan", style="underline+bold"))
+    print(stylize(f"Exec time : {time.time()-starttime} Seconds ", TermColors.infoHead))
     print(env.getScores())
     env.plotSkillLevelvsJobs()
