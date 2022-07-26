@@ -18,7 +18,9 @@ from colored import stylize, fg, bg, attr
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 # TODO 
-# *** Colored make a new test file as the curennt ray import in main messes with the colors
+# cython
+# *** better softmax 
+# *** nan error
 # ** code clean up [not optimization]
 # More better metric of fitness
 #   - gini index
@@ -30,14 +32,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 #VARS
 CHECKPOINT              = 500
-GENERATIONS             = 20
-POPSIZE                 = 16
+GENERATIONS             = 200
+POPSIZE                 = 32
 N_HIDDEN                = 2
 N_INPUTS                = 5
 N_OUTPUTS               = 4
 
 EXPO                    = 2         # indicates level how fast can skilled become richer
-SIM_POP_SIZE            = 200
+SIM_POP_SIZE            = 100
 SIM_MEAN_SKILL          = 50
 SIM_N_DAYS              = 100
 SIM_SKILL_SD            = 20 
@@ -87,7 +89,6 @@ def eval_genome_nonDist(genomes, config):
         env = Environment(  network         = network, 
                             args            = args)
         
-        print(2 - env.runGov())
         genome.fitness = 2 - env.runGov()
 
 

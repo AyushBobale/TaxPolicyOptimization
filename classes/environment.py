@@ -212,7 +212,6 @@ class Environment:
                 self.wealth_info['>HIGH'][0] += 1     
         
     def collectTax(self, tax):
-        # print("tax collection", tax)
         self.total_tax += tax[0]
 
         if tax[1] <= self.LOW_SKILL:
@@ -339,7 +338,8 @@ class Environment:
         self.getWealthInfo()
         avg_wealth_reci = (self.no_days * self.no_people)/(self.total_tax + self.total_wealth)
         # print(stylize((avg_wealth_reci), TermColors.danger))
-        return (1 + self.evaluateGini()) * (1 + welfare_per) * (1 * avg_wealth_reci)# have changes here to maximize tax+ wealth and minimize welfare
+        # print(f"{(self.no_days * self.no_people)} = {(self.total_tax + self.total_wealth, self.total_wealth, self.total_tax)} = {(1 + avg_wealth_reci)}")
+        return (1 + self.evaluateGini()) * (1 + welfare_per) * (1 + avg_wealth_reci * 10)# have changes here to maximize tax+ wealth and minimize welfare
 
     
 
