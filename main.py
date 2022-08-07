@@ -32,16 +32,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 #VARS
 CHECKPOINT              = 500
-GENERATIONS             = 200
+GENERATIONS             = 5
 POPSIZE                 = 32
 N_HIDDEN                = 2
 N_INPUTS                = 5
 N_OUTPUTS               = 4
 
 EXPO                    = 2         # indicates level how fast can skilled become richer
-SIM_POP_SIZE            = 100
+SIM_POP_SIZE            = 10
 SIM_MEAN_SKILL          = 50
-SIM_N_DAYS              = 100
+SIM_N_DAYS              = 10
 SIM_SKILL_SD            = 20 
 SIM_BASIC_SPENDING      = (20/10) ** EXPO  
 SIM_EDUCATION_COST      = (25/10) ** EXPO
