@@ -1,4 +1,3 @@
-from classes.agent import Agent
 from classes.people import People
 from classes.environment import Environment
 from classes.saveModel import SaveModel
@@ -136,7 +135,7 @@ if __name__ == "__main__":
         ray.init()
 
     confWriter = ConfigWriter(  n_inputs    = N_INPUTS,
-                                n_outputs   = N_INPUTS, 
+                                n_outputs   = N_OUTPUTS, 
                                 n_hidden    = N_HIDDEN, 
                                 pop_size    = POPSIZE)
     confWriter.writeFile('config.txt')

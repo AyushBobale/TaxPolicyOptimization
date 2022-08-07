@@ -1,21 +1,25 @@
 
 use pyo3::prelude::*;
-use pyo3::types::PyTuple;
+//use pyo3::types::PyTuple;
 // =====================================================================
 
 #[pyclass]
 struct RustPeople {
+    // remove getter and setter in final implenetation 
     #[pyo3(get,set)]
     coins       : f64, 
+    #[pyo3(get,set)]
     skill_lvl   : f64,
+    #[pyo3(get,set)]
     wage        : f64,
+    #[pyo3(get,set)]
     worked      : bool,
 }
 
 #[pymethods]
 impl RustPeople {
     #[new]
-    fn new(coins: f64, skill_lvl: f64) -> Self {
+    fn new(skill_lvl: f64, coins: f64) -> Self {
         RustPeople{ coins       : coins, 
                     skill_lvl   : skill_lvl,
                     wage        : 0.0,
@@ -66,6 +70,40 @@ impl RustPeople {
         self.wage = self.wage - tax;
         return [tax , wage_before_tax];
 
+    }
+
+    fn spend(&mut self, basic_need: f64) -> [f64; 2] {
+
+        if self.wage > basic_need{
+            self.wage = self.wage - basic_need;
+            return [0.0, self.skill_lvl];
+        }
+
+        let support_needed = basic_need - self.wage;
+        self.wage = 0.0;
+
+        return [support_needed, self.skill_lvl];
+    }
+
+    fn accquireSkill(&mut self, cost: f64, multiplier: f64) -> f64{
+        if self.worked{
+            return 0.0;
+        }
+
+        let calc_cost = cost * f64::powf(self.skill_lvl/100.0, 2.0);
+
+        if self.coins > calc_cost{
+            self.coins = self.coins - calc_cost;
+            self.skill_lvl = self.skill_lvl + multiplier/self.skill_lvl;
+            return 1.0;
+        }
+
+        return 0.5;
+    }
+
+    fn dayEnd(&mut self){
+        self.coins = self.coins + self.wage;
+        self.worked = false;
     }
 }
 

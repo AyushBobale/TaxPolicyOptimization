@@ -12,6 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from people import People
+from rust_classes import RustPeople as People
 from utils.termColors import TermColors
 #=====================================================================================
 # TODO  
@@ -310,6 +311,7 @@ class Environment:
                 if  person.work(self.jobs[0], self.expo):
                     del self.jobs[0]
 
+                print(len(self.tax_bracket), len(self.tax_rate), self.tax_rate)
                 self.collectTax(person.payTax(self.tax_rate, self.tax_bracket))
 
                 self.provideSocialWelfare(person.spend(self.basic_spending))
