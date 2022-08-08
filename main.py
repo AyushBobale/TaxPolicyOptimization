@@ -32,7 +32,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 #VARS
 CHECKPOINT              = 500
 GENERATIONS             = 5
-POPSIZE                 = 32
+POPSIZE                 = 128
 N_HIDDEN                = 2
 N_INPUTS                = 5
 N_OUTPUTS               = 4
