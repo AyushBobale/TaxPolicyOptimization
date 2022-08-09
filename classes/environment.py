@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from people import People
 # some how this is taking more time than base python
-from rust_classes import RustPeople as People
+# from rust_classes import RustPeople as People
 from utils.termColors import TermColors
 #=====================================================================================
 # TODO  

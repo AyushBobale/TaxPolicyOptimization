@@ -273,6 +273,70 @@ impl RustEnvironment {
         }
     }
 
+    // fn collectTax(&mut self, tax: [f64; 2]){
+    //     self.total_tax = self.total_tax + tax[0];
+
+    //     if tax[1] <= self.LOW_SKILL {
+    //         self.taxes_collected[0][1] = self.taxes_collected[0][1] + tax[0];
+    //         self.taxes_collected[0][0] = self.taxes_collected[0][0] + 1.0;
+    //     }
+    //     if tax[1] > self.LOW_SKILL  && tax[1] <= self.MED_SKILL {
+    //         self.taxes_collected[1][1] = self.taxes_collected[1][1] + tax[0];
+    //         self.taxes_collected[1][0] = self.taxes_collected[1][0] + 1.0;
+    //     }
+    //     if tax[1] > self.MED_SKILL  && tax[1] <= self.HIGH_SKILL {
+    //         self.taxes_collected[2][1] = self.taxes_collected[2][1] + tax[0];
+    //         self.taxes_collected[2][0] = self.taxes_collected[2][0] + 1.0;
+    //     }
+    //     if tax[1] > self.HIGH_SKILL {
+    //         self.taxes_collected[3][1] = self.taxes_collected[3][1] + tax[0];
+    //         self.taxes_collected[3][0] = self.taxes_collected[3][0] + 1.0;
+    //     }
+
+    // }
+
+    // fn provideSocialWelfare(&mut self, support_availed: [f64; 2]){
+    //     if support_availed[0] > 0.0 {
+    //         self.total_welfare = self.total_welfare + support_availed[0];
+
+    //         if support_availed[1] <= self.LOW_SKILL{
+    //             self.welfare_provided[0][1] = self.welfare_provided[0][1] + support_availed[0];
+    //             self.welfare_provided[0][0] = self.welfare_provided[0][0] + 1.0;
+    //         }
+    //         if support_availed[1] > self.LOW_SKILL &&  support_availed[1] <= self.MED_SKILL {
+    //             self.welfare_provided[1][1] = self.welfare_provided[1][1] + support_availed[0];
+    //             self.welfare_provided[1][0] = self.welfare_provided[1][0] + 1.0;
+    //         }
+    //         if support_availed[1] > self.MED_SKILL &&  support_availed[1] <= self.HIGH_SKILL {
+    //             self.welfare_provided[2][1] = self.welfare_provided[2][1] + support_availed[0];
+    //             self.welfare_provided[2][0] = self.welfare_provided[2][0] + 1.0;
+    //         }
+    //         if support_availed[1] > self.HIGH_SKILL {
+    //             self.welfare_provided[3][1] = self.welfare_provided[3][1] + support_availed[0];
+    //             self.welfare_provided[3][0] = self.welfare_provided[3][0] + 1.0;
+    //         }
+    //     }
+    // }
+
+    fn evaluateGini(&mut self) -> f64 {
+        let mut coins : Vec<f64> = Vec::with_capacity(self.no_people); 
+        for person in &mut self.pop{
+            coins.push(person.coins);
+        }
+        coins.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let n = coins.len();
+        let coef = 2.0 / n as f64;
+        let const_ = (n as f64 + 1.0)/n as f64;
+        let mut weighted_sum = 0.0;
+        for i in 0..n{
+            weighted_sum = weighted_sum + ((i as f64 + 1.0) * coins[i]);
+        }
+        let num = coef * weighted_sum;
+        let sum_: f64 = coins.iter().sum::<f64>(); 
+        let den =  sum_- const_;
+        return num/den;
+    }
+
     fn runGov(&mut self) -> f64 {
         self.genPopulation();
         self.genJobs(self.mean_skill, self.no_people, self.skill_sd);
@@ -286,24 +350,76 @@ impl RustEnvironment {
                     self.jobs.remove(0);
                 }
 
+                // self.collectTax(person.payTax(self.tax_rate, self.tax_bracket));
+                // Learn how to implemnet
+                // ===================================================================================
+                let tax = person.payTax(self.tax_rate, self.tax_bracket);
+                self.total_tax = self.total_tax + tax[0];
+                if tax[1] <= self.LOW_SKILL {
+                    self.taxes_collected[0][1] = self.taxes_collected[0][1] + tax[0];
+                    self.taxes_collected[0][0] = self.taxes_collected[0][0] + 1.0;
+                }
+                if tax[1] > self.LOW_SKILL  && tax[1] <= self.MED_SKILL {
+                    self.taxes_collected[1][1] = self.taxes_collected[1][1] + tax[0];
+                    self.taxes_collected[1][0] = self.taxes_collected[1][0] + 1.0;
+                }
+                if tax[1] > self.MED_SKILL  && tax[1] <= self.HIGH_SKILL {
+                    self.taxes_collected[2][1] = self.taxes_collected[2][1] + tax[0];
+                    self.taxes_collected[2][0] = self.taxes_collected[2][0] + 1.0;
+                }
+                if tax[1] > self.HIGH_SKILL {
+                    self.taxes_collected[3][1] = self.taxes_collected[3][1] + tax[0];
+                    self.taxes_collected[3][0] = self.taxes_collected[3][0] + 1.0;
+                }
+                // ===================================================================================
+                // self.provideSocialWelfare(person.spend(self.basic_spending))
+                let support_availed = person.spend(self.basic_spending);
+                if support_availed[0] > 0.0 {
+                    self.total_welfare = self.total_welfare + support_availed[0];
+        
+                    if support_availed[1] <= self.LOW_SKILL{
+                        self.welfare_provided[0][1] = self.welfare_provided[0][1] + support_availed[0];
+                        self.welfare_provided[0][0] = self.welfare_provided[0][0] + 1.0;
+                    }
+                    if support_availed[1] > self.LOW_SKILL &&  support_availed[1] <= self.MED_SKILL {
+                        self.welfare_provided[1][1] = self.welfare_provided[1][1] + support_availed[0];
+                        self.welfare_provided[1][0] = self.welfare_provided[1][0] + 1.0;
+                    }
+                    if support_availed[1] > self.MED_SKILL &&  support_availed[1] <= self.HIGH_SKILL {
+                        self.welfare_provided[2][1] = self.welfare_provided[2][1] + support_availed[0];
+                        self.welfare_provided[2][0] = self.welfare_provided[2][0] + 1.0;
+                    }
+                    if support_availed[1] > self.HIGH_SKILL {
+                        self.welfare_provided[3][1] = self.welfare_provided[3][1] + support_availed[0];
+                        self.welfare_provided[3][0] = self.welfare_provided[3][0] + 1.0;
+                    }
+                }
+                // ===================================================================================
+
+                person.accquireSkill(self.education_cost, self.education_mult);
                 person.coins = person.coins + person.wage;
                 person.worked = false;
             }
 
             self.genJobs(self.mean_skill, self.no_people, self.skill_sd);
-            println!("{day}");
         }
 
-        return 0.0
+        let welfare_per = self.total_welfare / (self.total_tax + self.total_welfare);
+        let avg_wealth_reci = (self.no_days * self.no_people) as f64/(self.total_tax + self.total_wealth);
+
+        let final_val = (1.0 + self.evaluateGini()) * (1.0 + welfare_per) * (1.0 + avg_wealth_reci * 10.0);
+        return final_val
     }
 
     fn getScores(&mut self) {
         for person in &self.pop{
-            println!("{}, {}", person.skill_lvl, person.coins);
+            //println!("{}, {}", person.skill_lvl, person.coins);
         }
         
         println!("{:?}", self.skill_dist);
-        println!("{:?}", self.jobs)
+        println!("{:?}", self.taxes_collected);
+        println!("{:?}", self.welfare_provided);
+        //println!("{:?}", self.jobs)
     }
 }
 
