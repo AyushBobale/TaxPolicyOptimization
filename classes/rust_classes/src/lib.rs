@@ -7,22 +7,15 @@ use rand::distributions::{Normal, Distribution};
 // TODO 
 // Remove PyO3 decorators from the RustPeople struct after completion of Rust Env
 
-#[pyclass]
+
 struct RustPeople {
-    // remove getter and setter in final implenetation 
-    #[pyo3(get,set)]
     coins       : f64, 
-    #[pyo3(get,set)]
     skill_lvl   : f64,
-    #[pyo3(get,set)]
     wage        : f64,
-    #[pyo3(get,set)]
     worked      : bool,
 }
 
-#[pymethods]
 impl RustPeople {
-    #[new]
     fn new(skill_lvl: f64, coins: f64) -> Self {
         RustPeople{ coins       : coins, 
                     skill_lvl   : skill_lvl,
@@ -435,7 +428,7 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 #[pymodule]
 fn rust_classes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
-    m.add_class::<RustPeople>()?;
+    //m.add_class::<RustPeople>()?;
     m.add_class::<RustEnvironment>()?;
     Ok(())
 }
