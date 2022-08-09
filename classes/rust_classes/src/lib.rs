@@ -1,8 +1,11 @@
 
 use pyo3::prelude::*;
+use rand::distributions::{Normal, Distribution};
 //use std::collections::HashMap;
 //use pyo3::types::PyTuple;
 // =====================================================================
+// TODO 
+// Remove PyO3 decorators from the RustPeople struct after completion of Rust Env
 
 #[pyclass]
 struct RustPeople {
@@ -134,11 +137,13 @@ struct RustEnvironment {
     expo            : f64,
 
     // genObj creates a genrater for normal distrubution with cut offs 
-    // people_skill list to generate people based on this skill level
+    genObj          : Normal,
+    people_skill    : Vec<f64>,
 
     pop             : Vec<RustPeople>,
     inttial_coins   : f64,
-    // // jobs normal distribution
+    jobs            : Vec<f64>,
+
     /*
     1 - <LOW
     2 - LOW>MED
@@ -155,6 +160,7 @@ struct RustEnvironment {
     skill_dist      : [[f64; 2]; 4],
 
 }
+
 
 #[pymethods]
 impl RustEnvironment {
@@ -192,9 +198,14 @@ impl RustEnvironment {
             education_mult      : sim_education_mult,
             expo                : expo,
 
-            pop                 : Vec::with_capacity(sim_pop_size),
+            // genrator obj for generating distribution
+            genObj              : Normal::new(sim_mean_skill, sim_skill_sd),
+            people_skill        : Vec::<f64>::with_capacity(sim_pop_size),
 
+            pop                 : Vec::<RustPeople>::with_capacity(sim_pop_size),
             inttial_coins       : sim_initial_coins,
+            jobs                : Vec::<f64>::with_capacity(sim_pop_size),
+
             taxes_collected     : [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
             total_tax           : 0.0,
             welfare_provided    : [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
@@ -204,6 +215,95 @@ impl RustEnvironment {
             skill_dist          : [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
 
         }
+    }
+
+    fn genPopulation(&mut self) {
+        self.pop = Vec::<RustPeople>::with_capacity(self.no_people);
+
+        while self.pop.len() < self.no_people{
+
+            let slvl = self.genObj.sample(&mut rand::thread_rng());
+
+            if slvl >= 0.0 && slvl < self.LOW_SKILL{
+
+                self.skill_dist[0][1] = self.skill_dist[0][1] + slvl;
+                self.skill_dist[0][0] = self.skill_dist[0][0] + 1.0;
+                self.pop.push( RustPeople{  skill_lvl   : slvl, 
+                                            coins       : self.inttial_coins,
+                                            wage        : 0.0,
+                                            worked      : false} );
+            }
+            if slvl >= self.LOW_SKILL && slvl < self.MED_SKILL{
+
+                self.skill_dist[1][1] = self.skill_dist[1][1] + slvl;
+                self.skill_dist[1][0] = self.skill_dist[1][0] + 1.0;
+                self.pop.push( RustPeople{  skill_lvl   : slvl, 
+                                            coins       : self.inttial_coins,
+                                            wage        : 0.0,
+                                            worked      : false} );
+            }
+            if slvl >= self.MED_SKILL && slvl < self.HIGH_SKILL{
+
+                self.skill_dist[2][1] = self.skill_dist[2][1] + slvl;
+                self.skill_dist[2][0] = self.skill_dist[2][0] + 1.0;
+                self.pop.push( RustPeople{  skill_lvl   : slvl, 
+                                            coins       : self.inttial_coins,
+                                            wage        : 0.0,
+                                            worked      : false} );
+            }
+            if slvl >= self.HIGH_SKILL && slvl <= 100.0{
+
+                self.skill_dist[3][1] = self.skill_dist[3][1] + slvl;
+                self.skill_dist[3][0] = self.skill_dist[3][0] + 1.0;
+                self.pop.push( RustPeople{  skill_lvl   : slvl, 
+                                            coins       : self.inttial_coins,
+                                            wage        : 0.0,
+                                            worked      : false} );
+            }
+        }
+        
+    }
+
+    fn genJobs(&mut self, mean_skill: f64, no_jobs: usize, skill_sd: f64){
+        while self.jobs.len() < no_jobs{
+            let jlvl = self.genObj.sample(&mut rand::thread_rng());
+            if jlvl >= 0.0 &&  jlvl <= 100.0{
+                self.jobs.push(jlvl)
+            }
+        }
+    }
+
+    fn runGov(&mut self) -> f64 {
+        self.genPopulation();
+        self.genJobs(self.mean_skill, self.no_people, self.skill_sd);
+
+        for day in 0..self.no_days{
+            self.jobs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            self.pop.sort_by(|a, b| a.skill_lvl.partial_cmp(&b.skill_lvl).unwrap());
+
+            for person in &mut self.pop{
+                if person.work(self.jobs[0], self.expo){
+                    self.jobs.remove(0);
+                }
+
+                person.coins = person.coins + person.wage;
+                person.worked = false;
+            }
+
+            self.genJobs(self.mean_skill, self.no_people, self.skill_sd);
+            println!("{day}");
+        }
+
+        return 0.0
+    }
+
+    fn getScores(&mut self) {
+        for person in &self.pop{
+            println!("{}, {}", person.skill_lvl, person.coins);
+        }
+        
+        println!("{:?}", self.skill_dist);
+        println!("{:?}", self.jobs)
     }
 }
 
@@ -220,5 +320,6 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 fn rust_classes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
     m.add_class::<RustPeople>()?;
+    m.add_class::<RustEnvironment>()?;
     Ok(())
 }
