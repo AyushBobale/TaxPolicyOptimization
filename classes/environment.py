@@ -339,6 +339,7 @@ class Environment:
 
         self.getWealthInfo()
         avg_wealth_reci = (self.no_days * self.no_people)/(self.total_tax + self.total_wealth)
+        print(f"Gini:  {self.evaluateGini()}, Welfare % : {welfare_per}, Avg Wealth reci : {avg_wealth_reci}")
         # print(stylize((avg_wealth_reci), TermColors.danger))
         # print(f"{(self.no_days * self.no_people)} = {(self.total_tax + self.total_wealth, self.total_wealth, self.total_tax)} = {(1 + avg_wealth_reci)}")
         return (1 + self.evaluateGini()) * (1 + welfare_per) * (1 + avg_wealth_reci * 10)# have changes here to maximize tax+ wealth and minimize welfare
@@ -353,35 +354,42 @@ class Environment:
         for person in self.pop:
             skill_lvl.append(person.skill_lvl)
             coins.append(person.coins)
+        # print("Coins : ", coins)
+        # print(stylize("Taxes ----------------------", TermColors.dangerHead ))
+        # print(self.taxes_collected)
+        # print(self.total_tax)
+        # print("Avg tax", self.getAvgTax(), "\n")
         
-        print(stylize("Taxes ----------------------", TermColors.dangerHead ))
-        print(self.taxes_collected)
-        print(self.total_tax)
-        print("Avg tax", self.getAvgTax(), "\n")
-        
 
-        print(stylize("Welfare ----------------------", TermColors.successHead))
-        print(self.welfare_provided)
-        print(self.total_welfare)
-        print("Avg welfare", self.getAvgWelfare(), "\n")
+        # print(stylize("Welfare ----------------------", TermColors.successHead))
+        # print(self.welfare_provided)
+        # print(self.total_welfare)
+        # print("Avg welfare", self.getAvgWelfare(), "\n")
 
-        print(stylize("Wealth ----------------------", TermColors.warnHead))
-        print(self.total_wealth)
-        print(self.wealth_info)
-        print("Avg wealth", self.getAvgWealth(), "\n")
+        # print(stylize("Wealth ----------------------", TermColors.warnHead))
+        # print(self.total_wealth)
+        # print(self.wealth_info)
+        # print("Avg wealth", self.getAvgWealth(), "\n")
 
-        print(stylize("Skill Dist ----------------------", TermColors.infoHead))
-        print(self.skill_distribution)
-        for i, (k, v) in enumerate(self.skill_distribution.items()): 
-            print(f"{k}      \t: {v[0]/self.no_people * 100}")
+        # print(stylize("Skill Dist ----------------------", TermColors.infoHead))
+        # print(self.skill_distribution)
+        # for i, (k, v) in enumerate(self.skill_distribution.items()): 
+        #     print(f"{k}      \t: {v[0]/self.no_people * 100}")
 
-        print(stylize("Welfare to tax ratio ------------------", TermColors.info))
-        print(self.total_welfare/ (self.total_tax + self.total_welfare))
+        # print(stylize("Welfare to tax ratio ------------------", TermColors.info))
+        # print(self.total_welfare/ (self.total_tax + self.total_welfare))
 
-        print(stylize("Gini Index : " + str(self.evaluateGini(coins)), TermColors.success))
-        self.plotLorenz(coins)
+        # print(stylize("Gini Index : " + str(self.evaluateGini(coins)), TermColors.success))
+        # #self.plotLorenz(coins)
 
-        print(stylize(f"Skill : {np.array(skill_lvl)}", TermColors.info))
+        # #print(stylize(f"Skill : {np.array(skill_lvl)}", TermColors.info))
+        print("Skill dist ", self.skill_distribution.values());
+        print("Taxes ", self.taxes_collected.values());
+        print("TTaxes ", self.total_tax);
+        print("Welfare ", self.welfare_provided.values());
+        print("TWelfare ", self.total_welfare);
+        print("Wealth ", self.wealth_info.values());
+        print("TWealth ", self.total_wealth);
         return None
 
 

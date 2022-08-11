@@ -6,6 +6,8 @@ use rand::distributions::{Normal, Distribution};
 // =====================================================================
 // TODO 
 // Remove PyO3 decorators from the RustPeople struct after completion of Rust Env
+// get correct values for the final output of run gov
+// code clean up optimizations
 
 
 struct RustPeople {
@@ -48,13 +50,13 @@ impl RustPeople {
 
         if self.wage > tax_bracket[0] &&  self.wage <= tax_bracket[1]{
             tax = tax_bracket[0] * tax_rate[0];
-            tax = tax + ((self.wage - tax_bracket[1]) * tax_rate[2]);
+            tax = tax + ((self.wage - tax_bracket[0]) * tax_rate[2]);
         }
 
         if self.wage > tax_bracket[1] && self.wage <= tax_bracket[2]{
             tax = tax_bracket[0] * tax_rate[0];
             tax = tax + ((tax_bracket[1] - tax_bracket[0]) * tax_rate[1]);
-            tax = tax + ((self.wage - tax_bracket[2]) * tax_rate[2]);
+            tax = tax + ((self.wage - tax_bracket[1]) * tax_rate[2]);
         }
 
         if self.wage > tax_bracket[2]{
@@ -174,7 +176,7 @@ impl RustEnvironment {
             MED_SKILL           : 50.0,
             HIGH_SKILL          : 75.0,
 
-            tax_rate            : [0.0, 0.10, 0.25, 0.50],
+            tax_rate            : [0.05, 0.05, 0.05, 0.05],
             tax_bracket         : [ f64::powf(30.0/10.0, expo),
                                     f64::powf(50.0/10.0, expo),
                                     f64::powf(75.0/10.0, expo)],
@@ -266,50 +268,77 @@ impl RustEnvironment {
         }
     }
 
-    // fn collectTax(&mut self, tax: [f64; 2]){
-    //     self.total_tax = self.total_tax + tax[0];
+/*
+    fn collectTax(&mut self, tax: [f64; 2]){
+        self.total_tax = self.total_tax + tax[0];
 
-    //     if tax[1] <= self.LOW_SKILL {
-    //         self.taxes_collected[0][1] = self.taxes_collected[0][1] + tax[0];
-    //         self.taxes_collected[0][0] = self.taxes_collected[0][0] + 1.0;
-    //     }
-    //     if tax[1] > self.LOW_SKILL  && tax[1] <= self.MED_SKILL {
-    //         self.taxes_collected[1][1] = self.taxes_collected[1][1] + tax[0];
-    //         self.taxes_collected[1][0] = self.taxes_collected[1][0] + 1.0;
-    //     }
-    //     if tax[1] > self.MED_SKILL  && tax[1] <= self.HIGH_SKILL {
-    //         self.taxes_collected[2][1] = self.taxes_collected[2][1] + tax[0];
-    //         self.taxes_collected[2][0] = self.taxes_collected[2][0] + 1.0;
-    //     }
-    //     if tax[1] > self.HIGH_SKILL {
-    //         self.taxes_collected[3][1] = self.taxes_collected[3][1] + tax[0];
-    //         self.taxes_collected[3][0] = self.taxes_collected[3][0] + 1.0;
-    //     }
+        if tax[1] <= self.LOW_SKILL {
+            self.taxes_collected[0][1] = self.taxes_collected[0][1] + tax[0];
+            self.taxes_collected[0][0] = self.taxes_collected[0][0] + 1.0;
+        }
+        if tax[1] > self.LOW_SKILL  && tax[1] <= self.MED_SKILL {
+            self.taxes_collected[1][1] = self.taxes_collected[1][1] + tax[0];
+            self.taxes_collected[1][0] = self.taxes_collected[1][0] + 1.0;
+        }
+        if tax[1] > self.MED_SKILL  && tax[1] <= self.HIGH_SKILL {
+            self.taxes_collected[2][1] = self.taxes_collected[2][1] + tax[0];
+            self.taxes_collected[2][0] = self.taxes_collected[2][0] + 1.0;
+        }
+        if tax[1] > self.HIGH_SKILL {
+            self.taxes_collected[3][1] = self.taxes_collected[3][1] + tax[0];
+            self.taxes_collected[3][0] = self.taxes_collected[3][0] + 1.0;
+        }
 
-    // }
+    }
 
-    // fn provideSocialWelfare(&mut self, support_availed: [f64; 2]){
-    //     if support_availed[0] > 0.0 {
-    //         self.total_welfare = self.total_welfare + support_availed[0];
+    fn provideSocialWelfare(&mut self, support_availed: [f64; 2]){
+        if support_availed[0] > 0.0 {
+            self.total_welfare = self.total_welfare + support_availed[0];
 
-    //         if support_availed[1] <= self.LOW_SKILL{
-    //             self.welfare_provided[0][1] = self.welfare_provided[0][1] + support_availed[0];
-    //             self.welfare_provided[0][0] = self.welfare_provided[0][0] + 1.0;
-    //         }
-    //         if support_availed[1] > self.LOW_SKILL &&  support_availed[1] <= self.MED_SKILL {
-    //             self.welfare_provided[1][1] = self.welfare_provided[1][1] + support_availed[0];
-    //             self.welfare_provided[1][0] = self.welfare_provided[1][0] + 1.0;
-    //         }
-    //         if support_availed[1] > self.MED_SKILL &&  support_availed[1] <= self.HIGH_SKILL {
-    //             self.welfare_provided[2][1] = self.welfare_provided[2][1] + support_availed[0];
-    //             self.welfare_provided[2][0] = self.welfare_provided[2][0] + 1.0;
-    //         }
-    //         if support_availed[1] > self.HIGH_SKILL {
-    //             self.welfare_provided[3][1] = self.welfare_provided[3][1] + support_availed[0];
-    //             self.welfare_provided[3][0] = self.welfare_provided[3][0] + 1.0;
-    //         }
-    //     }
-    // }
+            if support_availed[1] <= self.LOW_SKILL{
+                self.welfare_provided[0][1] = self.welfare_provided[0][1] + support_availed[0];
+                self.welfare_provided[0][0] = self.welfare_provided[0][0] + 1.0;
+            }
+            if support_availed[1] > self.LOW_SKILL &&  support_availed[1] <= self.MED_SKILL {
+                self.welfare_provided[1][1] = self.welfare_provided[1][1] + support_availed[0];
+                self.welfare_provided[1][0] = self.welfare_provided[1][0] + 1.0;
+            }
+            if support_availed[1] > self.MED_SKILL &&  support_availed[1] <= self.HIGH_SKILL {
+                self.welfare_provided[2][1] = self.welfare_provided[2][1] + support_availed[0];
+                self.welfare_provided[2][0] = self.welfare_provided[2][0] + 1.0;
+            }
+            if support_availed[1] > self.HIGH_SKILL {
+                self.welfare_provided[3][1] = self.welfare_provided[3][1] + support_availed[0];
+                self.welfare_provided[3][0] = self.welfare_provided[3][0] + 1.0;
+            }
+        }
+    }
+*/
+
+    fn getWealthInfo(&mut self){
+        self.wealth_info = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]];
+        self.total_wealth = 0.0;
+
+        for person in &mut self.pop{
+            self.total_wealth = self.total_wealth + person.coins;
+            if person.skill_lvl <= self.LOW_SKILL{
+                self.wealth_info[0][1] = self.wealth_info[0][1] + person.coins;
+                self.wealth_info[0][0] = self.wealth_info[0][0] + 1.0;
+            }
+            if person.skill_lvl > self.LOW_SKILL && person.skill_lvl <= self.MED_SKILL{
+                self.wealth_info[1][1] = self.wealth_info[1][1] + person.coins;
+                self.wealth_info[1][0] = self.wealth_info[1][0] + 1.0;
+            }
+            if person.skill_lvl > self.MED_SKILL && person.skill_lvl <= self.HIGH_SKILL{
+                self.wealth_info[2][1] = self.wealth_info[2][1] + person.coins;
+                self.wealth_info[2][0] = self.wealth_info[2][0] + 1.0;
+            }
+            if person.skill_lvl > self.HIGH_SKILL{
+                self.wealth_info[3][1] = self.wealth_info[3][1] + person.coins;
+                self.wealth_info[3][0] = self.wealth_info[3][0] + 1.0;
+            }
+        }
+    }
 
     fn evaluateGini(&mut self) -> f64 {
         let mut coins : Vec<f64> = Vec::with_capacity(self.no_people); 
@@ -324,10 +353,7 @@ impl RustEnvironment {
         for i in 0..n{
             weighted_sum = weighted_sum + ((i as f64 + 1.0) * coins[i]);
         }
-        let num = coef * weighted_sum;
-        let sum_: f64 = coins.iter().sum::<f64>(); 
-        let den =  sum_- const_;
-        return num/den;
+        return  coef * weighted_sum/coins.iter().sum::<f64>() - const_;
     }
 
     fn runGov(&mut self) -> f64 {
@@ -397,10 +423,12 @@ impl RustEnvironment {
             self.genJobs(self.mean_skill, self.no_people, self.skill_sd);
         }
 
+        self.getWealthInfo();
         let welfare_per = self.total_welfare / (self.total_tax + self.total_welfare);
         let avg_wealth_reci = (self.no_days * self.no_people) as f64/(self.total_tax + self.total_wealth);
+        let final_val = (1.0 + self.evaluateGini()) * (1.0 + welfare_per) * (1.0 + 10.0 * avg_wealth_reci);
 
-        let final_val = (1.0 + self.evaluateGini()) * (1.0 + welfare_per) * (1.0 + avg_wealth_reci * 10.0);
+        println!("Gini : {}, Welfare % : {}, Avg wealth reci :  {}", self.evaluateGini(), welfare_per, avg_wealth_reci );
         return final_val
     }
 
@@ -409,26 +437,23 @@ impl RustEnvironment {
             //println!("{}, {}", person.skill_lvl, person.coins);
         }
         
-        println!("{:?}", self.skill_dist);
-        println!("{:?}", self.taxes_collected);
-        println!("{:?}", self.welfare_provided);
+        println!("Skill dist {:?}", self.skill_dist);
+        println!("Taxes {:?}", self.taxes_collected);
+        println!("TTaxes {:?}", self.total_tax);
+        println!("Welfare {:?}", self.welfare_provided);
+        println!("TWelfare {:?}", self.total_welfare);
+        println!("Wealth {:?}", self.wealth_info);
+        println!("TWealth {:?}", self.total_wealth);
         //println!("{:?}", self.jobs)
     }
 }
 
 
 // =====================================================================
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
-}
-
 /// A Python module implemented in Rust.
+
 #[pymodule]
 fn rust_classes(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
-    //m.add_class::<RustPeople>()?;
     m.add_class::<RustEnvironment>()?;
     Ok(())
 }
