@@ -64,7 +64,6 @@ SIM_EDUCATION_MULT      = 1
 SIM_INITIAL_COINS       = 100
 
 # this function (n/10) ** Expo gives us at what skill lvl is it possible to survive
-# deprecated --
 args = {"gens"              : GENERATIONS,
         "popsize"           : POPSIZE,
         "n_hidden"          : N_HIDDEN,
@@ -83,7 +82,7 @@ args = {"gens"              : GENERATIONS,
 #=====================================================================================
 
 @ray.remote
-def distFunction(genome):
+def distFunction(genome, config):
     network         = neat.nn.FeedForwardNetwork.create(genome, config)
     # this is a mess
     output          = network.activate(
@@ -109,7 +108,7 @@ def distFunction(genome):
 def eval_genome(genomes, config):
     futures = []
     for genomeid, genome in genomes:
-        futures.append(distFunction.remote(genome))
+        futures.append(distFunction.remote(genome, config))
     
     for i, (genomeid, genome) in enumerate(genomes):
         genome.fitness =  ray.get(futures[i])
@@ -165,12 +164,28 @@ def testNeat(config):
         model = pickle.load(f)
     winner = model.winner
     # print(f"Args : {model.args}")
+    args = model.args
     
     network         = neat.nn.FeedForwardNetwork.create(winner, config)
-
-    env = Environment(  network         = network,  
-                        args            = args)
-    env.runGov(test=True)
+    output          = network.activate(
+                        pp.normalize(
+                        np.array([[args["sim_mean_skill"], args["sim_skill_sd"], args["sim_basic_spending"], args["sim_education_cost"]]]))[0])
+    exp_sum         = sum([exp(op) for op in output])
+    SIM_TAX_RATE    = [exp(op)/exp_sum for op in output]
+    env = Environment(  expo                = args["expo"],
+                        sim_pop_size        = args["sim_pop_size"],
+                        sim_mean_skill      = args["sim_mean_skill"],
+                        sim_n_days          = args["sim_n_days"],
+                        sim_skill_sd        = args["sim_skill_sd"],
+                        sim_basic_spending  = args["sim_basic_spending"],
+                        sim_education_cost  = args["sim_education_cost"],
+                        sim_education_mult  = args["sim_education_mult"],
+                        sim_initial_coins   = args["sim_initial_coins"],
+                        sim_tax_rate        = SIM_TAX_RATE)
+    # deprecated
+    # env = Environment(  network         = network,  
+    #                     args            = args)
+    env.runGov()
     env.getScores()
                             
 #=====================================================================================
@@ -181,7 +196,7 @@ if __name__ == "__main__":
     '''
     print(sys.argv)
     if sys.argv[1] == "1":
-        ray.init()
+        ray.init(job_config=ray.job_config.JobConfig(code_search_path=sys.path))
 
     confWriter = ConfigWriter(  n_inputs    = N_INPUTS,
                                 n_outputs   = N_OUTPUTS, 

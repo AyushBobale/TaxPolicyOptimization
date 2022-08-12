@@ -18,17 +18,6 @@ class Environment:
     def __init__(   self, 
                     network, 
                     args):
-        # values obtained from percentile values of the distribution
-        # now job level control  how much everyone gets paid
-        # try incorporating inflation not hardcoded like % increase per year 
-        # more dynamic like when money is printed
-        # for india                             tax rate
-        # under 200,000 is low income           0%
-        # 200,000 - 500,000 is middle income    5% 
-        # 500,000 - 10,00,000 is high income    12.5% averaged
-        # > 10,00,000 above high income         25%
-
-
         self.LOW_SKILL          = 30
         self.MED_SKILL          = 50
         self.HIGH_SKILL         = 75
@@ -38,16 +27,9 @@ class Environment:
         INDIAN_APPROX_REV       = (0.5, 0.25, 0.10, 0.0)
 
         self.tax_rate           = INDIAN_APPROX_REV
-        # FAQ
-        # Why TF am i doing this exponent =====================================
-        # Refer payTax and work funtion from People class
-        # we are paying people the 10th of thier skill  which is raised to the expoenent 
-        # we are using the same function to decide the tax bracket as with the same exponent 
-        # so that there is the same funtio that decides pay and tax boundaries based upon our skill dist
         self.tax_bracket        = ( (self.LOW_SKILL/10) ** args["expo"], 
                                     (self.MED_SKILL/10) ** args["expo"], 
                                     (self.HIGH_SKILL/10)  ** args["expo"])
-
 
         self.network            = network
         self.no_people          = args["sim_pop_size"]
@@ -99,7 +81,6 @@ class Environment:
                                     '>HIGH'   : [0,0] }
         
     def genPopulation(self):
-        #done at sim time to optimize distributed performance
         self.pop                = []
         for i, slvl in enumerate(self.people_skill):
             if slvl <= self.LOW_SKILL:
@@ -122,14 +103,6 @@ class Environment:
         return self.pop
 
     def genJobs(self, mean_skill, no_jobs, skill_sd=None):
-        # genrates available jobs in the market
-        # can be customized as per needs and the env it is modeled against
-        # consideration generates the same n of jobs as people
-        # a concept from the econmy simulation video can be impleneted for less or more jobs
-        # will be considered for later
-        # Point to consider 
-        # as the econmy progesses the job levels should also progress
-        # to be implemented
         if not skill_sd:
             skill_sd            = mean_skill/4
         self.jobs               = list(np.random.normal(
@@ -305,9 +278,6 @@ class Environment:
                 person.worked = False
                 # person.dayEnd()
             
-            # self.genJobs(self.mean_skill, self.no_people)
-            # make a function for job generation with different 
-            # mean and SD
             
             self.jobs = list(self.genObj.rvs(self.no_people))
         
@@ -322,9 +292,6 @@ class Environment:
 
         self.getWealthInfo()
         avg_wealth_reci = (self.no_days * self.no_people)/(self.total_tax + self.total_wealth)
-        # print(f"Gini:  {self.evaluateGini()}, Welfare % : {welfare_per}, Avg Wealth reci : {avg_wealth_reci}")
-        # print(stylize((avg_wealth_reci), TermColors.danger))
-        # print(f"{(self.no_days * self.no_people)} = {(self.total_tax + self.total_wealth, self.total_wealth, self.total_tax)} = {(1 + avg_wealth_reci)}")
         return (1 + self.evaluateGini()) * (1 + welfare_per) * (1 + avg_wealth_reci * 10)# have changes here to maximize tax+ wealth and minimize welfare
 
     
