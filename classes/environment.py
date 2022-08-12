@@ -12,24 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from people import People
-# some how this is taking more time than base python
-# from rust_classes import RustPeople as People
 from utils.termColors import TermColors
-#=====================================================================================
-# TODO  
-# probability of working is a function of tax rate
-# following update would be scoring based on total productivity
-# average productiviy could be calculated as 
-# (total wealth + total tax)/(no_days * no_people) would be a expo function as it depends on it
-
-# There is no concept of money vaue depreciation / appreciation for assets
-# basic spending should scale according to inflation
-# - Only Employer is government
-# - There are as such no assets to be bought currenty
-
-# think about increasing job level as a result of increasing economy
-# as we have a way to increase skill lvl
-
 #=====================================================================================
 class Environment:
     def __init__(   self, 
@@ -339,7 +322,7 @@ class Environment:
 
         self.getWealthInfo()
         avg_wealth_reci = (self.no_days * self.no_people)/(self.total_tax + self.total_wealth)
-        print(f"Gini:  {self.evaluateGini()}, Welfare % : {welfare_per}, Avg Wealth reci : {avg_wealth_reci}")
+        # print(f"Gini:  {self.evaluateGini()}, Welfare % : {welfare_per}, Avg Wealth reci : {avg_wealth_reci}")
         # print(stylize((avg_wealth_reci), TermColors.danger))
         # print(f"{(self.no_days * self.no_people)} = {(self.total_tax + self.total_wealth, self.total_wealth, self.total_tax)} = {(1 + avg_wealth_reci)}")
         return (1 + self.evaluateGini()) * (1 + welfare_per) * (1 + avg_wealth_reci * 10)# have changes here to maximize tax+ wealth and minimize welfare

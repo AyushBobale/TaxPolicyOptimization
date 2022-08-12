@@ -1,8 +1,6 @@
 
 use pyo3::prelude::*;
 use rand::distributions::{Normal, Distribution};
-//use std::collections::HashMap;
-//use pyo3::types::PyTuple;
 // =====================================================================
 // TODO 
 // Remove PyO3 decorators from the RustPeople struct after completion of Rust Env
@@ -169,14 +167,15 @@ impl RustEnvironment {
             sim_basic_spending  : f64,
             sim_education_cost  : f64,
             sim_education_mult  : f64,
-            sim_initial_coins   : f64
+            sim_initial_coins   : f64,
+            sim_tax_rate        : [f64; 4],
             ) -> Self {
         RustEnvironment{
             LOW_SKILL           : 30.0,
             MED_SKILL           : 50.0,
             HIGH_SKILL          : 75.0,
 
-            tax_rate            : [0.05, 0.05, 0.05, 0.05],
+            tax_rate            : sim_tax_rate,
             tax_bracket         : [ f64::powf(30.0/10.0, expo),
                                     f64::powf(50.0/10.0, expo),
                                     f64::powf(75.0/10.0, expo)],
@@ -268,53 +267,6 @@ impl RustEnvironment {
         }
     }
 
-/*
-    fn collectTax(&mut self, tax: [f64; 2]){
-        self.total_tax = self.total_tax + tax[0];
-
-        if tax[1] <= self.LOW_SKILL {
-            self.taxes_collected[0][1] = self.taxes_collected[0][1] + tax[0];
-            self.taxes_collected[0][0] = self.taxes_collected[0][0] + 1.0;
-        }
-        if tax[1] > self.LOW_SKILL  && tax[1] <= self.MED_SKILL {
-            self.taxes_collected[1][1] = self.taxes_collected[1][1] + tax[0];
-            self.taxes_collected[1][0] = self.taxes_collected[1][0] + 1.0;
-        }
-        if tax[1] > self.MED_SKILL  && tax[1] <= self.HIGH_SKILL {
-            self.taxes_collected[2][1] = self.taxes_collected[2][1] + tax[0];
-            self.taxes_collected[2][0] = self.taxes_collected[2][0] + 1.0;
-        }
-        if tax[1] > self.HIGH_SKILL {
-            self.taxes_collected[3][1] = self.taxes_collected[3][1] + tax[0];
-            self.taxes_collected[3][0] = self.taxes_collected[3][0] + 1.0;
-        }
-
-    }
-
-    fn provideSocialWelfare(&mut self, support_availed: [f64; 2]){
-        if support_availed[0] > 0.0 {
-            self.total_welfare = self.total_welfare + support_availed[0];
-
-            if support_availed[1] <= self.LOW_SKILL{
-                self.welfare_provided[0][1] = self.welfare_provided[0][1] + support_availed[0];
-                self.welfare_provided[0][0] = self.welfare_provided[0][0] + 1.0;
-            }
-            if support_availed[1] > self.LOW_SKILL &&  support_availed[1] <= self.MED_SKILL {
-                self.welfare_provided[1][1] = self.welfare_provided[1][1] + support_availed[0];
-                self.welfare_provided[1][0] = self.welfare_provided[1][0] + 1.0;
-            }
-            if support_availed[1] > self.MED_SKILL &&  support_availed[1] <= self.HIGH_SKILL {
-                self.welfare_provided[2][1] = self.welfare_provided[2][1] + support_availed[0];
-                self.welfare_provided[2][0] = self.welfare_provided[2][0] + 1.0;
-            }
-            if support_availed[1] > self.HIGH_SKILL {
-                self.welfare_provided[3][1] = self.welfare_provided[3][1] + support_availed[0];
-                self.welfare_provided[3][0] = self.welfare_provided[3][0] + 1.0;
-            }
-        }
-    }
-*/
-
     fn getWealthInfo(&mut self){
         self.wealth_info = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]];
         self.total_wealth = 0.0;
@@ -368,9 +320,6 @@ impl RustEnvironment {
                 if person.work(self.jobs[0], self.expo){
                     self.jobs.remove(0);
                 }
-
-                // self.collectTax(person.payTax(self.tax_rate, self.tax_bracket));
-                // Learn how to implemnet
                 // ===================================================================================
                 let tax = person.payTax(self.tax_rate, self.tax_bracket);
                 self.total_tax = self.total_tax + tax[0];
@@ -391,7 +340,6 @@ impl RustEnvironment {
                     self.taxes_collected[3][0] = self.taxes_collected[3][0] + 1.0;
                 }
                 // ===================================================================================
-                // self.provideSocialWelfare(person.spend(self.basic_spending))
                 let support_availed = person.spend(self.basic_spending);
                 if support_availed[0] > 0.0 {
                     self.total_welfare = self.total_welfare + support_availed[0];
@@ -428,7 +376,7 @@ impl RustEnvironment {
         let avg_wealth_reci = (self.no_days * self.no_people) as f64/(self.total_tax + self.total_wealth);
         let final_val = (1.0 + self.evaluateGini()) * (1.0 + welfare_per) * (1.0 + 10.0 * avg_wealth_reci);
 
-        println!("Gini : {}, Welfare % : {}, Avg wealth reci :  {}", self.evaluateGini(), welfare_per, avg_wealth_reci );
+        // println!("Gini : {}, Welfare % : {}, Avg wealth reci :  {}", self.evaluateGini(), welfare_per, avg_wealth_reci );
         return final_val
     }
 

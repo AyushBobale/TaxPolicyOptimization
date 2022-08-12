@@ -1,5 +1,6 @@
 from classes.people import People
-from classes.environment import Environment
+# from classes.environment import Environment
+from rust_classes import RustEnvironment as Environment
 from classes.saveModel import SaveModel
 
 from utils.configWriter import ConfigWriter
@@ -11,13 +12,16 @@ import pickle
 import ray
 import time
 import sys
+from sklearn import preprocessing as pp
+import numpy as np
 import colored
 from colored import stylize, fg, bg, attr
+from math import exp
 
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 #=====================================================================================
 # TODO 
-# cython
+# network.activate()
 # *** better softmax 
 # *** nan error
 # ** code clean up [not optimization]
@@ -27,28 +31,40 @@ sys.path.append(os.path.join(os.path.dirname(__file__)))
 #
 # change config writer to neat's own provided module
 # IK the code is a bit redundant will optimise later hopefully
+# probability of working is a function of tax rate
+# following update would be scoring based on total productivity
+# average productiviy could be calculated as 
+# (total wealth + total tax)/(no_days * no_people) would be a expo function as it depends on it
+
+# There is no concept of money vaue depreciation / appreciation for assets
+# basic spending should scale according to inflation
+# - Only Employer is government
+# - There are as such no assets to be bought currenty
+
+# think about increasing job level as a result of increasing economy
+# as we have a way to increase skill lvl
 
 #=====================================================================================
 #VARS
 CHECKPOINT              = 500
-GENERATIONS             = 5
+GENERATIONS             = 10
 POPSIZE                 = 128
 N_HIDDEN                = 2
-N_INPUTS                = 5
+N_INPUTS                = 4
 N_OUTPUTS               = 4
 
 EXPO                    = 2         # indicates level how fast can skilled become richer
-SIM_POP_SIZE            = 10
+SIM_POP_SIZE            = 100
 SIM_MEAN_SKILL          = 50
-SIM_N_DAYS              = 10
+SIM_N_DAYS              = 1000
 SIM_SKILL_SD            = 20 
 SIM_BASIC_SPENDING      = (20/10) ** EXPO  
 SIM_EDUCATION_COST      = (25/10) ** EXPO
 SIM_EDUCATION_MULT      = 1
 SIM_INITIAL_COINS       = 100
 
-#this function (n/10) ** Expo gives us at what skill lvl is it possible to survive
-
+# this function (n/10) ** Expo gives us at what skill lvl is it possible to survive
+# deprecated --
 args = {"gens"              : GENERATIONS,
         "popsize"           : POPSIZE,
         "n_hidden"          : N_HIDDEN,
@@ -69,8 +85,25 @@ args = {"gens"              : GENERATIONS,
 @ray.remote
 def distFunction(genome):
     network         = neat.nn.FeedForwardNetwork.create(genome, config)
-    env = Environment(  network         = network, 
-                        args            = args)
+    # this is a mess
+    output          = network.activate(
+                        pp.normalize(
+                        np.array([[SIM_MEAN_SKILL, SIM_SKILL_SD, SIM_BASIC_SPENDING, SIM_EDUCATION_COST]]))[0])
+    exp_sum         = sum([exp(op) for op in output])
+    SIM_TAX_RATE    = [exp(op)/exp_sum for op in output]
+    env = Environment(  expo                = EXPO,
+                        sim_pop_size        = SIM_POP_SIZE,
+                        sim_mean_skill      = SIM_MEAN_SKILL,
+                        sim_n_days          = SIM_N_DAYS,
+                        sim_skill_sd        = SIM_SKILL_SD,
+                        sim_basic_spending  = SIM_BASIC_SPENDING,
+                        sim_education_cost  = SIM_EDUCATION_COST,
+                        sim_education_mult  = SIM_EDUCATION_MULT,
+                        sim_initial_coins   = SIM_INITIAL_COINS,
+                        sim_tax_rate        = SIM_TAX_RATE)
+    # deprecated =========================================================
+    # env = Environment(  network         = network, 
+    #                     args            = args)
     return 2 - env.runGov()
 
 def eval_genome(genomes, config):
@@ -85,8 +118,24 @@ def eval_genome(genomes, config):
 def eval_genome_nonDist(genomes, config):
     for genomeid, genome in genomes:
         network         = neat.nn.FeedForwardNetwork.create(genome, config)
-        env = Environment(  network         = network, 
-                            args            = args)
+        output          = network.activate(
+                        pp.normalize(
+                        np.array([[SIM_MEAN_SKILL, SIM_SKILL_SD, SIM_BASIC_SPENDING, SIM_EDUCATION_COST]]))[0])
+        exp_sum         = sum([exp(op) for op in output])
+        SIM_TAX_RATE    = [exp(op)/exp_sum for op in output]
+        env = Environment(  expo                = EXPO,
+                            sim_pop_size        = SIM_POP_SIZE,
+                            sim_mean_skill      = SIM_MEAN_SKILL,
+                            sim_n_days          = SIM_N_DAYS,
+                            sim_skill_sd        = SIM_SKILL_SD,
+                            sim_basic_spending  = SIM_BASIC_SPENDING,
+                            sim_education_cost  = SIM_EDUCATION_COST,
+                            sim_education_mult  = SIM_EDUCATION_MULT,
+                            sim_initial_coins   = SIM_INITIAL_COINS,
+                            sim_tax_rate        = SIM_TAX_RATE)
+        # deprecated =========================================================
+        # env = Environment(  network         = network, 
+        #                     args            = args)
         
         genome.fitness = 2 - env.runGov()
 
